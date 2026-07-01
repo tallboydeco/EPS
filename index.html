@@ -11,6 +11,51 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
+    /* ── localStorage-backed polyfill for window.storage ──
+       The Claude preview environment provides a built-in window.storage
+       API. Outside that environment (e.g. deployed on Cloudflare Pages),
+       window.storage does not exist, so this app's saves were silently
+       no-oping. This shim gives it the same get/set/delete/list interface,
+       backed by the browser's real localStorage, so saves persist on
+       this device/browser going forward. */
+    if (typeof window !== "undefined" && !window.storage) {
+      const LS_PREFIX = "eps:";
+      const k = (key) => LS_PREFIX + key;
+      window.storage = {
+        async get(key) {
+          try {
+            const raw = localStorage.getItem(k(key));
+            return raw === null ? null : { key, value: raw };
+          } catch (e) { return null; }
+        },
+        async set(key, value) {
+          try {
+            localStorage.setItem(k(key), value);
+            return { key, value };
+          } catch (e) { return null; }
+        },
+        async delete(key) {
+          try {
+            localStorage.removeItem(k(key));
+            return { key, deleted: true };
+          } catch (e) { return null; }
+        },
+        async list(prefix) {
+          try {
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const full = localStorage.key(i);
+              if (full && full.startsWith(LS_PREFIX)) {
+                const stripped = full.slice(LS_PREFIX.length);
+                if (!prefix || stripped.startsWith(prefix)) keys.push(stripped);
+              }
+            }
+            return { keys };
+          } catch (e) { return null; }
+        }
+      };
+    }
+
     const { useState, useEffect, useRef, useMemo } = React;
 
 /* ════════════════════════════════════════════════════════
