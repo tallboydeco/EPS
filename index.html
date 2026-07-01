@@ -1,0 +1,3231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Erin McDonald Co. · Event Production Sheet</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+/* ════════════════════════════════════════════════════════
+   STYLES
+════════════════════════════════════════════════════════ */
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --black:#000000;
+  --white:#FFFFFF;
+  --muted:#F5F5F5;
+  --muted-fg:#525252;
+  --border-light:#E5E5E5;
+  --serif:'Playfair Display',Georgia,serif;
+  --body:'Source Serif 4',Georgia,serif;
+  --mono:'JetBrains Mono',monospace;
+  --font:'Source Serif 4',Georgia,serif;
+  /* backward-compat */
+  --blue:#000;--green:#000;--red:#000;--orange:#525252;
+  --label:#000;--label-2:#525252;--label-3:#aaaaaa;
+  --fill-1:#E5E5E5;--fill-2:#F5F5F5;--fill-3:#FAFAFA;
+  --bg:#fff;--bg-2:#F5F5F5;--sep-op:#E5E5E5;
+  --walnut:#000;--blue-d:#000;--red-d:#000;--orange-d:#525252;--green-d:#000;
+  --g1:#F5F5F5;--g2:#E5E5E5;--g3:#AAAAAA;--g4:#525252;
+  --r-sm:0px;--r-md:0px;--r-lg:0px;--r-xl:0px;--pill:0px;
+}
+/* ── Base ── */
+.epswrap{background:var(--white);color:var(--black);font-family:var(--body);font-size:16px;line-height:1.6;min-height:100vh;}
+.root{max-width:880px;margin:0 auto;padding:0 28px 140px;}
+/* ── Masthead ── */
+.masthead{padding:44px 0 20px;display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;border-bottom:4px solid var(--black);margin-bottom:0;}
+.mast-eyebrow{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--muted-fg);margin-bottom:12px;}
+.mast-title{font-family:var(--serif);font-size:56px;font-weight:400;line-height:1.0;letter-spacing:-.02em;font-style:italic;}
+.mast-save{font-family:var(--mono);font-size:9px;color:var(--muted-fg);font-weight:400;text-align:right;flex-shrink:0;letter-spacing:.06em;}
+.spinner{display:inline-block;width:12px;height:12px;border-radius:50%;border:1.5px solid var(--border-light);border-top-color:var(--black);animation:eps-spin .7s linear infinite;flex-shrink:0;}
+@keyframes eps-spin{to{transform:rotate(360deg);}}
+/* ── Tab rail ── */
+.rail{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--black);margin-bottom:40px;-webkit-overflow-scrolling:touch;}
+.rail::-webkit-scrollbar{display:none;}
+.rail-tab{flex-shrink:0;padding:16px 16px 13px;border:none;background:transparent;font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .1s,border-color .1s;}
+.rail-tab:hover{color:var(--black);}
+.rail-tab.active{color:var(--black);border-bottom-color:var(--black);}
+/* ── Section headings ── */
+.sh{font-family:var(--serif);font-size:42px;font-weight:400;letter-spacing:-.01em;margin-bottom:6px;font-style:italic;}
+.sd{font-family:var(--mono);font-size:9px;color:var(--muted-fg);letter-spacing:.14em;margin-bottom:32px;line-height:1.5;text-transform:uppercase;}
+.section-lbl{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-fg);margin:32px 0 10px;padding-bottom:6px;border-bottom:4px solid var(--black);display:flex;align-items:center;justify-content:space-between;}
+.section-lbl:first-of-type{margin-top:0;}
+/* ── Cards ── */
+.card{border-top:4px solid var(--black);padding:22px 0;margin-bottom:0;}
+.col-card{border-top:4px solid var(--black);padding:20px 0;margin-bottom:0;}
+/* ── Fields ── */
+.grid{display:grid;gap:20px 22px;}
+.g2{grid-template-columns:1fr 1fr;}
+.g3{grid-template-columns:1fr 110px 90px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.flabel{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg);}
+.finput,.fselect,.ftextarea{background:transparent;border:none;border-bottom:1px solid var(--black);border-radius:0;padding:10px 0;font-size:15px;font-family:var(--body);color:var(--black);width:100%);}
+.finput{appearance:none;-webkit-appearance:none;}
+.fselect{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath d='M0 0L4.5 5L9 0z' fill='%23000'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 2px bottom 14px;padding-right:22px;cursor:pointer;}
+.ftextarea{resize:vertical;min-height:72px;line-height:1.6;padding:8px 0;}
+.finput:focus,.fselect:focus,.ftextarea:focus{outline:none;border-bottom-width:3px;}
+.finput::placeholder,.ftextarea::placeholder{color:var(--muted-fg);font-style:italic;}
+/* ── Segmented control ── */
+.seg{display:inline-flex;gap:0;border:1px solid var(--black);}
+.seg button{border:none;border-right:1px solid var(--black);background:transparent;padding:7px 14px;font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);cursor:pointer;}
+.seg button:last-child{border-right:none;}
+.seg button.on{background:var(--black);color:var(--white);}
+.seg button:active{opacity:.7;}
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 22px;border-radius:0;font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.18em;text-transform:uppercase;border:1px solid transparent;cursor:pointer;min-height:42px;transition:background .1s,color .1s,border-color .1s;}
+.btn:active{opacity:.75;}
+.btn-blue{background:var(--black);color:var(--white);border-color:var(--black);}
+.btn-ink{background:var(--black);color:var(--white);border-color:var(--black);}
+.btn-ink:hover{background:var(--white);color:var(--black);border-color:var(--black);}
+.btn-ink:disabled{background:var(--border-light);color:var(--muted-fg);border-color:var(--border-light);cursor:default;}
+.btn-grey{background:transparent;color:var(--black);border:1px solid var(--black);}
+.btn-grey:hover{background:var(--black);color:var(--white);}
+.btn-line{background:transparent;color:var(--black);border:1px solid var(--black);}
+.btn-red{background:transparent;color:var(--black);border:1px solid var(--black);}
+.btn-dashed{background:transparent;color:var(--muted-fg);border:1px dashed var(--muted-fg);width:100%;padding:16px 0;font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;}
+.btn-dashed:hover{color:var(--black);border-color:var(--black);border-style:solid;}
+.btn-sm{padding:8px 16px;font-size:9px;min-height:36px;}
+.btn-xs{padding:5px 12px;font-size:9px;min-height:30px;}
+.btn-x{background:none;border:none;cursor:pointer;color:var(--muted-fg);font-size:14px;padding:4px 8px;}
+.btn-x:hover{color:var(--black);}
+.btn-x:disabled{opacity:.2;cursor:default;}
+.btn-add{background:var(--black);color:var(--white);border:none;min-height:30px;padding:5px 14px;font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;}
+.btn-add:disabled{background:var(--border-light);color:var(--muted-fg);cursor:default;}
+/* ── Badges ── */
+.badge{display:inline-block;background:var(--black);color:var(--white);font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.06em;padding:3px 8px;}
+.badge-blue{background:var(--black);}
+.badge-soft{background:var(--muted);color:var(--black);border:1px solid var(--border-light);}
+/* ── Quick links ── */
+.ql-list{border-top:1px solid var(--black);margin-bottom:8px;}
+.ql-item{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 0;border:none;background:transparent;border-bottom:1px solid var(--border-light);text-align:left;cursor:pointer;font-family:var(--body);color:var(--black);font-size:15px;font-weight:400;}
+.ql-item:last-child{border-bottom:none;}
+.ql-item:hover{font-style:italic;}
+.ql-sub{font-family:var(--mono);font-size:9px;color:var(--muted-fg);letter-spacing:.06em;margin-top:3px;text-transform:uppercase;}
+.ql-chev{color:var(--muted-fg);font-size:13px;flex-shrink:0;}
+/* ── Build piece blocks ── */
+.piece{border-top:1px solid var(--border-light);padding:18px 0;margin-bottom:0;}
+.piece-head{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.recipe-lbl{display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-fg);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--black);}
+.stem-row{display:grid;grid-template-columns:1fr 64px 100px 28px;gap:7px;align-items:center;margin-bottom:9px;}
+.comp-row{display:grid;grid-template-columns:1fr 90px 28px;gap:7px;align-items:center;margin-bottom:9px;}
+.minput{background:transparent;border:none;border-bottom:1px solid var(--border-light);border-radius:0;padding:8px 0;font-size:13px;font-family:var(--body);color:var(--black);width:100%;}
+.minput:focus{border-bottom:1px solid var(--black);outline:none;}
+.pull-row{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border-light);margin-bottom:16px;flex-wrap:wrap;}
+.pull-note{font-family:var(--mono);font-size:9px;color:var(--muted-fg);flex:1;min-width:100px;letter-spacing:.08em;text-transform:uppercase;}
+/* ── Schedule ── */
+.sched-toggle-stack{display:flex;flex-direction:column;gap:0;}
+.sched-block{border-top:1px solid var(--border-light);padding:16px 0;margin-bottom:0;}
+.sched-block-head{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-fg);margin-bottom:10px;}
+.sched-head-row{display:grid;grid-template-columns:72px 1fr 1fr 84px 1fr 28px;gap:7px;padding:0 0 7px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);border-bottom:1px solid var(--black);}
+.sched-row{display:grid;grid-template-columns:72px 1fr 1fr 84px 1fr 28px;gap:7px;align-items:center;margin-bottom:0;padding:7px 0;border-bottom:1px solid var(--border-light);}
+.fp-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+/* ── Dropzone ── */
+.dz{border:1px dashed var(--muted-fg);padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted-fg);font-family:var(--mono);font-size:9px;cursor:pointer;margin-bottom:18px;text-align:center;letter-spacing:.08em;text-transform:uppercase;}
+.dz:hover,.dz.over{border-color:var(--black);color:var(--black);border-style:solid;}
+.dz-thumb-wrap{position:relative;display:inline-block;margin-bottom:18px;width:100%;}
+.dz-thumb{max-width:100%;max-height:200px;display:block;width:100%;object-fit:cover;border:1px solid var(--black);}
+.dz-remove{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.85);color:var(--white);border:none;width:28px;height:28px;cursor:pointer;font-size:13px;}
+/* ══════════════════════════════════════════
+   PRODUCTION CARDS — NEW MINIMALIST MONOCHROME LAYOUT
+   ══════════════════════════════════════════ */
+.piece-card{border:1px solid var(--black);margin-bottom:28px;}
+.piece-card:last-child{border:1px solid var(--black);}
+/* Inverted header — black bg, white text, no item number */
+.piece-card-header{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;background:var(--black);}
+.piece-num{display:none;}  /* item number hidden */
+.piece-name{font-family:var(--serif);font-size:22px;font-weight:400;font-style:italic;color:var(--white);flex:1;letter-spacing:-.01em;line-height:1.1;}
+.piece-qty-info{font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:.1em;color:rgba(255,255,255,.6);flex-shrink:0;margin-left:20px;text-transform:uppercase;}
+.piece-qty-info strong{color:var(--white);font-size:16px;letter-spacing:-.01em;}
+.piece-card-split{display:flex;align-items:stretch;}
+.piece-photo-box{width:130px;flex-shrink:0;overflow:hidden;border-right:1px solid var(--border-light);}
+.piece-photo-box img{width:100%;height:100%;object-fit:cover;display:block;}
+/* Recipe sections */
+.recipe-body{flex:1;min-width:0;}
+.prod-section{padding:0;}
+.prod-section+.prod-section{border-top:4px solid var(--black);}
+.prod-sec-label{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.24em;text-transform:uppercase;color:var(--muted-fg);padding:14px 22px 0;}
+/* Two-column recipe table */
+.prod-tbl-head{display:grid;grid-template-columns:1fr 88px 110px;padding:8px 22px 8px;margin-top:10px;border-top:1px solid var(--border-light);border-bottom:2px solid var(--black);font-family:var(--mono);font-size:8px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg);}
+.prod-tbl-head span:nth-child(2),.prod-tbl-head span:nth-child(3){text-align:right;}
+.prod-tbl-row{display:grid;grid-template-columns:1fr 88px 110px;padding:12px 22px;border-bottom:1px solid var(--border-light);align-items:baseline;cursor:pointer;transition:background .1s;}
+.prod-tbl-row:last-child{border-bottom:none;}
+.prod-tbl-row:hover{background:var(--muted);}
+.prod-tbl-row.row-done .prod-ingredient,.prod-tbl-row.row-done .prod-qty{text-decoration:line-through;opacity:.35;}
+/* Ingredient name */
+.prod-ingredient{font-family:var(--body);font-size:17px;font-weight:400;color:var(--black);line-height:1.3;}
+/* Quantity numbers — bold and clear */
+.prod-qty{font-family:var(--mono);font-size:18px;font-weight:700;text-align:right;color:var(--black);line-height:1;}
+.prod-qty-unit{font-family:var(--body);font-size:10px;font-weight:300;color:var(--muted-fg);margin-left:3px;font-style:italic;}
+/* Total column — hero number, slightly larger */
+.prod-qty-total{font-family:var(--mono);font-size:22px;font-weight:700;text-align:right;color:var(--black);line-height:1;}
+.prod-qty-total.big{font-size:24px;}
+/* Hard goods within production */
+.prod-hg-row{display:grid;grid-template-columns:1fr 88px 110px;padding:11px 22px;border-bottom:1px solid var(--border-light);align-items:baseline;cursor:pointer;transition:background .1s;}
+.prod-hg-row:last-child{border-bottom:none;}
+.prod-hg-row:hover{background:var(--muted);}
+.prod-hg-row.row-done .prod-ingredient,.prod-hg-row.row-done .prod-qty-total{text-decoration:line-through;opacity:.35;}
+/* ── Collection heading ── */
+.col-heading{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.26em;text-transform:uppercase;color:var(--muted-fg);margin:36px 0 16px;padding-bottom:7px;border-bottom:4px solid var(--black);}
+.col-heading:first-of-type{margin-top:0;}
+/* ── Master florals ── */
+.fmc{border-top:1px solid var(--black);margin-bottom:0;overflow:hidden;}
+.fmc:last-of-type{border-bottom:1px solid var(--black);}
+.fmc-head{display:flex;justify-content:space-between;align-items:baseline;padding:15px 0 13px;border-bottom:1px solid var(--border-light);}
+.fmc-name{font-family:var(--serif);font-size:22px;font-weight:400;letter-spacing:-.01em;font-style:italic;}
+.fmc-unit{font-family:var(--mono);font-size:10px;font-weight:400;color:var(--muted-fg);}
+.fmc-col-head{display:grid;grid-template-columns:26px 1fr auto auto;gap:8px 12px;padding:10px 0 5px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);border-bottom:1px solid var(--border-light);}
+.fmc-col-head>:nth-child(3),.fmc-col-head>:nth-child(4){text-align:right;}
+.fmc-row{display:grid;grid-template-columns:26px 1fr auto auto;gap:8px 12px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px;}
+.fmc-row:last-of-type{border-bottom:none;}
+.fmc-idx{font-family:var(--mono);font-size:12px;color:var(--muted-fg);}
+.fmc-piece{color:var(--black);font-family:var(--body);}
+.fmc-calc{color:var(--muted-fg);font-family:var(--mono);font-size:11px;white-space:nowrap;}
+.fmc-result{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums;text-align:right;min-width:28px;}
+.fmc-foot{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid var(--border-light);font-family:var(--mono);font-size:11px;}
+.fmc-foot-exact{color:var(--muted-fg);}
+.fmc-foot-exact strong{color:var(--black);font-weight:700;}
+/* ── Order form ── */
+.order-head-row{display:grid;grid-template-columns:1fr 68px 1fr 72px;gap:10px;padding:10px 0 8px;border-bottom:2px solid var(--black);font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--black);}
+.order-head-row>:nth-child(2),.order-head-row>:nth-child(4){text-align:right;}
+.order-item{border-bottom:1px solid var(--border-light);}
+.order-item:last-child{border-bottom:1px solid var(--black);}
+.order-row{display:grid;grid-template-columns:1fr 68px 1fr 72px;gap:10px;padding:13px 0 6px;align-items:center;}
+.order-adjust-row{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 0 13px;}
+.order-adjust-lbl{font-family:var(--mono);font-size:9px;color:var(--muted-fg);letter-spacing:.08em;margin-right:auto;text-transform:uppercase;}
+.order-count-input{background:transparent;border:none;border-bottom:1px solid var(--black);padding:4px 0;font-size:14px;font-family:var(--mono);text-align:right;width:100%;}
+.order-name{font-family:var(--serif);font-size:18px;font-weight:400;letter-spacing:-.01em;font-style:italic;}
+.order-stems{font-family:var(--mono);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;color:var(--muted-fg);}
+.order-unit-col{display:flex;flex-direction:column;gap:4px;}
+.order-select{background:transparent;border:none;border-bottom:1px solid var(--border-light);padding:5px 0;font-size:12px;font-family:var(--mono);width:100%;appearance:none;-webkit-appearance:none;}
+.order-size{background:transparent;border:none;border-bottom:1px solid var(--border-light);padding:4px 0;font-size:11px;width:100%;font-family:var(--mono);}
+.order-count{font-family:var(--serif);font-size:26px;font-weight:400;text-align:right;line-height:1;font-style:italic;}
+.order-count-lbl{font-family:var(--mono);font-size:9px;font-weight:400;color:var(--muted-fg);letter-spacing:.08em;text-transform:uppercase;}
+/* ── Checklist ── */
+.ck{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border-light);font-size:15px;align-items:center;}
+.ck:last-child{border-bottom:none;}
+.ck-qty{font-family:var(--mono);font-weight:700;min-width:40px;text-align:right;font-variant-numeric:tabular-nums;font-size:15px;}
+.ck-src{color:var(--muted-fg);font-family:var(--mono);font-size:10px;letter-spacing:.04em;}
+.ck-grow{flex:1;font-family:var(--body);}
+.ck-done{text-decoration:line-through;color:var(--muted-fg);}
+.ck-box{background:none;border:1px solid var(--black);width:20px;height:20px;cursor:pointer;flex-shrink:0;font-size:11px;display:flex;align-items:center;justify-content:center;}
+.ck-box.on{background:var(--black);color:var(--white);}
+/* ── Flag ── */
+.flag{background:var(--muted);border-left:4px solid var(--black);padding:16px 18px;margin-top:24px;}
+.flag h4{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:8px;color:var(--black);}
+.flag p{font-size:13px;color:var(--muted-fg);margin-bottom:4px;font-family:var(--body);}
+/* ── Library ── */
+.idx-cat{border-top:1px solid var(--border-light);margin-bottom:0;overflow:hidden;}
+.idx-cat-head{width:100%;display:flex;justify-content:space-between;align-items:center;padding:14px 0;border:none;background:transparent;cursor:pointer;font-family:var(--body);font-size:15px;color:var(--black);}
+.idx-count{font-family:var(--mono);font-size:9px;color:var(--muted-fg);background:var(--muted);padding:2px 8px;border:1px solid var(--border-light);}
+.idx-body{padding:4px 0 14px;display:flex;flex-wrap:wrap;gap:6px;}
+.idx-chip{display:inline-flex;align-items:center;gap:6px;background:var(--muted);border:1px solid var(--border-light);padding:5px 5px 5px 10px;font-family:var(--body);font-size:13px;}
+.idx-chip button{background:none;border:none;cursor:pointer;color:var(--muted-fg);font-size:11px;padding:2px 6px;}
+.idx-chip button:hover{color:var(--black);}
+/* ── Sticky nav ── */
+.sticky{position:sticky;bottom:0;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);display:flex;gap:10px;padding:16px 0 20px;margin-top:8px;border-top:1px solid var(--border-light);}
+.export-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px;}
+.rev-wrap{border:1px solid var(--black);padding:22px;}
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;z-index:200;}
+.modal-sheet{background:var(--white);border-top:4px solid var(--black);width:100%;padding:32px 28px 38px;max-width:880px;margin:0 auto;}
+.modal-handle{display:none;}
+.modal-title{font-family:var(--serif);font-size:32px;font-weight:400;margin-bottom:10px;font-style:italic;}
+.modal-body{font-family:var(--body);font-size:14px;color:var(--muted-fg);margin-bottom:30px;line-height:1.6;}
+.modal-actions{display:flex;flex-direction:column;gap:10px;}
+/* ── PDF preview ── */
+.pv{position:fixed;inset:0;background:var(--white);z-index:300;overflow-y:auto;}
+.pv-bar{position:sticky;top:0;background:var(--black);padding:12px 18px;display:flex;gap:8px;flex-wrap:wrap;z-index:5;}
+.pv-btn{display:inline-block;background:var(--white);color:var(--black);border:none;padding:8px 16px;font-family:var(--mono);font-size:10px;font-weight:400;cursor:pointer;text-decoration:none;line-height:1.3;letter-spacing:.12em;text-transform:uppercase;}
+.pv-btn.ghost{background:transparent;color:var(--white);border:1px solid rgba(255,255,255,.4);}
+.pv-hint{color:rgba(255,255,255,.55);font-family:var(--mono);font-size:9px;align-self:center;letter-spacing:.06em;text-transform:uppercase;}
+/* ── PDF document ── */
+.pd{font-family:'Source Serif 4',Georgia,serif;color:#000;font-size:17px;line-height:1.65;max-width:1000px;margin:0 auto;padding:32px 40px 48px;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact;}
+.pd-section{margin-bottom:36px;}
+.pd-section:last-child{margin-bottom:0;}
+.pd-section + .pd-section{border-top:2px solid #000;padding-top:28px;}
+.pd-eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:#000;margin-bottom:10px;}
+.pd-client{font-family:'Playfair Display',Georgia,serif;font-size:54px;font-weight:400;line-height:1.0;font-style:italic;letter-spacing:-.01em;}
+.pd-sect-name{font-family:'Playfair Display',Georgia,serif;font-size:29px;font-style:italic;font-weight:400;color:#000;margin-top:5px;}
+.pd-rule{border:none;border-top:2px solid #000;margin:20px 0;}
+.pd-hair{border:none;border-top:1px solid #E5E5E5;margin:10px 0;}
+.pd-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 24px;font-size:16px;margin:20px 0;}
+.pd-meta b{font-family:'JetBrains Mono',monospace;font-weight:400;display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#000;margin-bottom:3px;}
+.pd-delivery{border:1px solid #000;padding:16px 18px;margin:18px 0 22px;font-size:16px;line-height:1.5;display:inline-block;min-width:240px;}
+.pd-coltitle{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:400;letter-spacing:.24em;text-transform:uppercase;margin:28px 0 14px;padding-bottom:7px;border-bottom:2px solid #000;}
+/* Production PDF — new two-column layout */
+.pd-piece{margin-bottom:28px;page-break-inside:avoid;border:1px solid #000;}
+.pd-piece-head{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#fff;border-bottom:3px solid #000;}
+.pd-piece-title{font-family:'Playfair Display',Georgia,serif;font-size:24px;font-weight:400;font-style:italic;color:#000;flex:1;}
+.pd-piece-qty-big{font-family:'JetBrains Mono',monospace;font-size:19px;color:#000;font-weight:700;margin-left:12px;}
+.pd-piece-body{padding:0;}
+.pd-sec-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#000;padding:12px 18px 0;}
+.pd-rx-head{display:grid;grid-template-columns:1fr 90px 110px;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#000;padding:9px 18px 9px;border-top:1px solid #E5E5E5;border-bottom:1.5px solid #000;margin-top:8px;}
+.pd-rx-head>:nth-child(2),.pd-rx-head>:nth-child(3){text-align:right;}
+.pd-rx-row{display:grid;grid-template-columns:1fr 90px 110px;gap:6px;padding:12px 18px;border-bottom:1px solid #E5E5E5;align-items:baseline;}
+.pd-rx-row:last-child{border-bottom:none;}
+.pd-rx-name{font-family:'Source Serif 4',Georgia,serif;font-size:18px;font-weight:400;}
+.pd-rx-each{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;text-align:right;}
+.pd-rx-total{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;text-align:right;}
+.pd-rx-unit{font-family:'Source Serif 4',Georgia,serif;font-size:12px;font-weight:400;color:#000;margin-left:3px;}
+.pd-hg-head{display:grid;grid-template-columns:1fr 110px;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#000;padding:9px 18px;border-top:1px solid #E5E5E5;border-bottom:1.5px solid #000;margin-top:0;}
+.pd-hg-head>:nth-child(2){text-align:right;}
+.pd-hg-row{display:grid;grid-template-columns:1fr 110px;gap:6px;padding:11px 18px;border-bottom:1px solid #E5E5E5;align-items:baseline;}
+.pd-hg-row:last-child{border-bottom:none;}
+.pd-hg-qty{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;text-align:right;}
+/* Remaining PDF classes */
+.pd-piece-num{display:none;}
+.pd-2col{display:block;}
+.pd-colhead{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#000;margin-bottom:5px;}
+.pd-ul{list-style:none;font-size:16px;}
+.pd-ul li{padding:2.5px 0;display:flex;justify-content:space-between;gap:8px;}
+.pd-img{max-height:110px;border:1px solid #E5E5E5;margin-bottom:8px;display:block;max-width:100%;}
+.pd-mrow{display:grid;grid-template-columns:1fr 100px 118px;gap:14px;padding:10px 0;border-bottom:1px solid #E5E5E5;}
+.pd-mrow.head{border-bottom:2px solid #000;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#000;}
+.pd-mrow>:nth-child(2),.pd-mrow>:nth-child(3){text-align:right;}
+.pd-mname{font-weight:400;}
+.pd-mmath{font-family:'JetBrains Mono',monospace;font-size:13px;color:#000;}
+.pd-mnum{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:700;}
+.pd-ck{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid #E5E5E5;font-size:16px;align-items:center;}
+.pd-ckq{font-family:'JetBrains Mono',monospace;font-weight:700;min-width:46px;text-align:right;}
+.pd-sched-row{display:grid;grid-template-columns:70px 1fr 1fr 1fr;gap:10px;padding:8px 0;border-bottom:1px solid #E5E5E5;font-size:15px;}
+.pd-sched-row.head{border-bottom:2px solid #000;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#000;}
+.pd-fp-box{border:1px dashed #aaa;min-height:130px;margin-bottom:14px;padding:10px 12px;}
+.pd-fp-label{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#000;}
+.pd-contact{padding:14px 0;border-bottom:1px solid #E5E5E5;page-break-inside:avoid;}
+.pd-cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;font-size:16px;margin-top:5px;}
+.pd-foot{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#000;margin-top:40px;}
+.pd-sign{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:36px;}
+.pd-sign div{border-top:1px solid #000;padding-top:6px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:#000;}
+/* ── Contact badges ── */
+.contact-type-badge{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border:1px solid transparent;}
+.contact-type-badge.staff{background:var(--black);color:var(--white);}
+.contact-type-badge.vendor{background:transparent;color:var(--black);border-color:var(--black);}
+.contact-type-badge.venue{background:var(--black);color:var(--white);}
+/* ── Footer ── */
+.app-footer{text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:.32em;text-transform:uppercase;color:var(--muted-fg);padding:32px 0 16px;border-top:1px solid var(--border-light);}
+@media print{
+  .app-ui,.pv-bar{display:none!important;}
+  .pv{position:static;overflow:visible;}
+  @page{margin:.65in;}
+}
+@media (max-width:600px){
+  .sh{font-size:30px;}
+  .mast-title{font-size:38px;}
+  .grid.g2{grid-template-columns:1fr;}
+  .grid.g3{grid-template-columns:1fr 100px 76px;}
+  .stem-row{grid-template-columns:1fr 56px 82px 26px;}
+  .fmc-row{grid-template-columns:22px 1fr auto;}
+  .fmc-result{display:none;}
+  .order-head-row,.order-row{grid-template-columns:1fr 56px 1fr 60px;gap:7px;}
+  .sched-head-row{display:none;}
+  .sched-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;padding:8px 0;}
+  .sched-row>*:not(.btn-x){flex:1 1 45%;min-width:110px;}
+  .sched-row>.btn-x{flex:0 0 auto;margin-left:auto;}
+  .piece-photo-box{width:90px;min-height:120px;}
+  .recipe-body{padding-left:0;}
+  .prod-tbl-head,.prod-tbl-row,.prod-hg-row{grid-template-columns:1fr 72px 88px;padding:10px 14px;}
+  .piece-card-header{padding:14px 16px;}
+  .piece-name{font-size:18px;}
+}
+
+`;
+
+/* ════════════════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════════════════ */
+const uid = () => Math.random().toString(36).slice(2, 9);
+const pad2 = (n) => String(n).padStart(2, "0");
+
+function parseFrac(s) {
+  if (s == null || s === "") return null;
+  const str = String(s).trim();
+  let m = str.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if (m) return +m[1] + (+m[2]) / (+m[3]);
+  m = str.match(/^(\d+)\/(\d+)$/);
+  if (m) return +m[1] / (+m[2]);
+  const n = parseFloat(str);
+  return isNaN(n) ? null : n;
+}
+
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+
+function fmtFrac(n) {
+  if (n == null || isNaN(n)) return "?";
+  const neg = n < 0 ? "−" : "";
+  n = Math.abs(n);
+  let w = Math.floor(n + 1e-9), r = n - w;
+  if (r < 1e-6) return neg + String(w);
+  if (r > 1 - 1e-6) return neg + String(w + 1);
+  let best = null;
+  for (let d = 2; d <= 32; d++) {
+    const num = Math.round(r * d);
+    if (num <= 0 || num >= d) continue;
+    const err = Math.abs(r - num / d);
+    if (!best || err < best.err - 1e-9) best = { num, den: d, err };
+  }
+  let fs;
+  if (best && best.err < 0.01) {
+    const g = gcd(best.num, best.den);
+    const num = best.num / g, den = best.den / g;
+    fs = `${num}/${den}`;
+  } else {
+    fs = String(Math.round(r * 100) / 100).replace(/^0\./, ".");
+  }
+  return w === 0 ? neg + fs : `${neg}${w} ${fs}`;
+}
+
+function newStem() { return { id: uid(), name: "", qty: "", unit: "stems" }; }
+function newComponent() { return { id: uid(), name: "", qty: "" }; }
+function newPiece() {
+  return { id: uid(), name: "", qty: "1", itemNumber: "", pullMode: "per", image: null, stems: [newStem()], hasComponents: "no", components: [newComponent()] };
+}
+function newCollection(name = "") { return { id: uid(), name, pieces: [newPiece()] }; }
+function newContact() { return { id: uid(), name: "", contactType: "", businessName: "", role: "", phone: "", email: "", notes: "", includeInPdf: true }; }
+function reindex(cols) { return cols.map((c) => ({ ...c })); }
+function newScheduleRow() { return { id: uid(), time: "", location: "", task: "", staff: "", groupLabel: "Staff" }; }
+function newDayCard() {
+  return {
+    id: uid(),
+    date: "",
+    rows: [newScheduleRow()],
+    objectives: [],
+    cargoLoadIn: null,
+    cargoLoadOut: null,
+    dismantling: null,
+  };
+}
+function normalizeDayCard(dc) {
+  return {
+    id: dc.id || uid(),
+    date: dc.date || "",
+    rows: Array.isArray(dc.rows) && dc.rows.length ? dc.rows.map((r) => ({ id: r.id || uid(), time: r.time || "", location: r.location || "", task: r.task || "", staff: r.staff || "", groupLabel: r.groupLabel || "Staff" })) : [newScheduleRow()],
+    objectives: Array.isArray(dc.objectives) ? dc.objectives : [],
+    cargoLoadIn: dc.cargoLoadIn || null,
+    cargoLoadOut: dc.cargoLoadOut || null,
+    dismantling: dc.dismantling || null,
+  };
+}
+function newFloorplan() { return { id: uid(), label: "" }; }
+function newInvoice(name = "", fileName = "") { return { id: uid(), name, fileName, uploadedAt: Date.now(), file: null }; }
+function newVendor() { return { id: uid(), name: "", category: "", contactName: "", phone: "", email: "", notes: "", invoices: [] }; }
+function blankInfo() {
+  return { client: "", event_date: "", venue: "", venue_address: "", venue_city: "", venue_state: "", venue_zip: "", setup: "", takedown: "", setup_tbd: false, takedown_tbd: false, planner_name: "", designer_name: "", venue2: "", venue2_address: "", venue2_city: "", venue2_state: "", venue2_zip: "" };
+}
+function newEventEntry(label = "Untitled Event") {
+  return { id: uid(), label, eventDate: "", updatedAt: Date.now() };
+}
+
+/* ── AI Autofill (paste free-text notes, parsed by Claude) ── */
+const AI_AUTOFILL_SYSTEM = `You extract structured event-production data from messy, informal notes for a floral & event design studio (handwritten meeting notes, texted lists, emails, order confirmations, etc). Return ONLY raw JSON — no markdown fences, no commentary — matching exactly this shape:
+{
+  "info": {"client":"","event_date":"","venue":"","venue_address":"","venue_city":"","venue_state":"","venue_zip":""},
+  "contacts": [{"name":"","contactType":"staff|venue|vendor","role":"","businessName":"","phone":"","email":"","notes":""}],
+  "vendors": [{"name":"","category":"","contactName":"","phone":"","email":"","notes":""}],
+  "collections": [{"name":"","pieces":[{"name":"","qty":"1","pullMode":"per","stems":[{"name":"","qty":"1","unit":"stems|bunches|blooms"}]}]}],
+  "days": [{"date":"","label":"","rows":[{"time":"","location":"","task":"","groupLabel":"","staff":""}],"objectives":[""]}],
+  "hgExtras": [{"name":"","qty":""}]
+}
+Rules: event_date and days[].date must be ISO YYYY-MM-DD if a year can be inferred, else leave "". "pullMode":"per" means the stem quantities given are PER PIECE (piece qty is the count of pieces, e.g. "2 arrangements, 20 roses each"); use "total" only if the quantities given are already a combined total for all pieces together. Only include sections/fields actually present in the source text — use empty arrays/strings rather than inventing data. Do not fabricate names, numbers, or dates.`;
+
+/* ── Autofill (CSV / text drag-and-drop) ── */
+const AUTOFILL_FIELD_LABELS = {
+  client: "Client", event_date: "Event Date", venue: "Venue", venue_address: "Venue Street Address",
+  venue_city: "Venue City", venue_state: "Venue State", venue_zip: "Venue ZIP", setup: "Setup Time",
+  takedown: "Strike Time", planner_name: "Event Planner", designer_name: "Lead Designer",
+  venue2: "Second Venue", venue2_address: "Second Venue Address", venue2_city: "Second Venue City",
+  venue2_state: "Second Venue State", venue2_zip: "Second Venue ZIP",
+};
+const AUTOFILL_ALIASES = {
+  client: ["client", "client name", "couple", "couple names", "event name", "bride and groom"],
+  event_date: ["event date", "date", "wedding date"],
+  venue: ["venue", "venue name", "location", "ceremony venue"],
+  venue_address: ["venue address", "address", "street address"],
+  venue_city: ["city"],
+  venue_state: ["state"],
+  venue_zip: ["zip", "zip code", "postal code"],
+  setup: ["setup", "setup time", "load in", "load in time", "arrival time"],
+  takedown: ["strike", "strike time", "takedown", "takedown time", "load out", "load out time", "breakdown"],
+  planner_name: ["planner", "event planner", "coordinator"],
+  designer_name: ["designer", "lead designer", "florist"],
+  venue2: ["second venue", "venue 2", "venue two", "reception venue"],
+  venue2_address: ["second venue address", "venue 2 address"],
+  venue2_city: ["second venue city", "venue 2 city"],
+  venue2_state: ["second venue state", "venue 2 state"],
+  venue2_zip: ["second venue zip", "venue 2 zip"],
+};
+const AUTOFILL_EXTRA_ALIASES = {
+  planner_phone: ["planner phone", "planner cell", "coordinator phone"],
+  planner_email: ["planner email", "coordinator email"],
+  designer_phone: ["designer phone", "florist phone"],
+  designer_email: ["designer email", "florist email"],
+};
+function normKey(k) { return String(k || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
+function buildAliasMap(src) {
+  const map = {};
+  Object.entries(src).forEach(([field, aliases]) => {
+    map[normKey(field)] = field;
+    aliases.forEach((a) => { map[normKey(a)] = field; });
+  });
+  return map;
+}
+const AUTOFILL_ALIAS_MAP = buildAliasMap(AUTOFILL_ALIASES);
+const AUTOFILL_EXTRA_ALIAS_MAP = buildAliasMap(AUTOFILL_EXTRA_ALIASES);
+function splitCsvLine(line) {
+  const out = []; let cur = ""; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQ) {
+      if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ",") { out.push(cur); cur = ""; }
+      else cur += c;
+    }
+  }
+  out.push(cur);
+  return out.map((s) => s.trim());
+}
+function parseAutofillPairs(text) {
+  const rawLines = String(text || "").split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const pairs = [];
+  if (rawLines.length >= 2) {
+    const header = splitCsvLine(rawLines[0]);
+    const row = splitCsvLine(rawLines[1]);
+    if (header.length >= 3 && header.length === row.length) {
+      header.forEach((h, i) => pairs.push([h, row[i]]));
+      return pairs;
+    }
+  }
+  rawLines.forEach((line) => {
+    const cells = splitCsvLine(line);
+    if (cells.length >= 2 && cells[0] && cells.slice(1).join("").trim()) {
+      pairs.push([cells[0], cells.slice(1).join(", ")]);
+      return;
+    }
+    const idx = line.indexOf(":");
+    if (idx > -1) pairs.push([line.slice(0, idx), line.slice(idx + 1)]);
+  });
+  return pairs;
+}
+function autofillToISODate(str) {
+  const s = String(str || "").trim();
+  if (!s) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const mdy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (mdy) {
+    let [, m, d, y] = mdy;
+    if (y.length === 2) y = "20" + y;
+    return `${y.padStart(4, "0")}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+  return "";
+}
+function autofillToISODateTime(str, fallbackDateISO) {
+  const s = String(str || "").trim();
+  if (!s) return "";
+  const timeOnly = s.match(/^(\d{1,2})(:(\d{2}))?\s*(am|pm)?$/i);
+  if (timeOnly && fallbackDateISO) {
+    let hh = parseInt(timeOnly[1], 10);
+    const mm = timeOnly[3] || "00";
+    const ap = (timeOnly[4] || "").toLowerCase();
+    if (ap === "pm" && hh < 12) hh += 12;
+    if (ap === "am" && hh === 12) hh = 0;
+    return `${fallbackDateISO}T${String(hh).padStart(2, "0")}:${mm}`;
+  }
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+  return "";
+}
+function buildAutofillPreview(pairs) {
+  let eventDateISO = "";
+  pairs.forEach(([k, v]) => { if (AUTOFILL_ALIAS_MAP[normKey(k)] === "event_date") eventDateISO = autofillToISODate(v); });
+  const infoFields = [];
+  const seen = new Set();
+  const contactExtra = { planner_phone: "", planner_email: "", designer_phone: "", designer_email: "" };
+  const unmatched = [];
+  pairs.forEach(([rawKey, rawVal]) => {
+    const val = String(rawVal || "").trim();
+    const nk = normKey(rawKey);
+    const field = AUTOFILL_ALIAS_MAP[nk];
+    if (!field) {
+      const extraField = AUTOFILL_EXTRA_ALIAS_MAP[nk];
+      if (extraField) { contactExtra[extraField] = val; }
+      else if (val) { unmatched.push({ key: rawKey, value: val }); }
+      return;
+    }
+    if (!val || seen.has(field)) return;
+    seen.add(field);
+    let outVal = val, tbd = false;
+    if (field === "event_date") outVal = autofillToISODate(val) || val;
+    else if (field === "setup" || field === "takedown") {
+      if (/^tbd$/i.test(val)) { tbd = true; outVal = ""; }
+      else outVal = autofillToISODateTime(val, eventDateISO) || val;
+    }
+    infoFields.push({ key: field, label: AUTOFILL_FIELD_LABELS[field], rawValue: val, value: outVal, tbd, included: true });
+  });
+  return { infoFields, contactExtra, unmatched };
+}
+
+function slimCollectionsForCore(cols) {
+  return (cols || []).map((c) => ({ ...c, pieces: (c.pieces || []).map((pc) => ({ ...pc, image: pc.image ? "@img" : null })) }));
+}
+function slimVendorsForCore(vendors) {
+  return (vendors || []).map((v) => ({ ...v, invoices: (v.invoices || []).map((inv) => ({ ...inv, file: inv.file ? "@pdf" : null })) }));
+}
+function makeCorePayload({ info, contacts, collections, vendors, hgExtras, finalLoad, orderUnits, preEventDays, eventDay, postEventDays, scheduleNotes, floorplans, showTimelineContacts }) {
+  return {
+    info, contacts, collections: slimCollectionsForCore(collections), vendors: slimVendorsForCore(vendors), hgExtras, finalLoad, orderUnits,
+    preEventDays, eventDay, postEventDays, scheduleNotes, floorplans, showTimelineContacts,
+  };
+}
+
+const EMPTY_LIB = { flowers: [], components: [], venues: [], clients: [], contacts: [], businesses: [], collections: [], roles: [] };
+const LIB_LABELS = { flowers: "Fresh", components: "Hard Goods", venues: "Venues", clients: "Clients", contacts: "Contacts", businesses: "Businesses", collections: "Collections", roles: "Roles" };
+const DEFAULT_RECURRING_INFO_FIELDS = ["planner_name", "designer_name"];
+
+const hasStorage = () => typeof window !== "undefined" && !!window.storage;
+async function waitForStorage(maxWaitMs = 4000, intervalMs = 100) {
+  const start = Date.now();
+  while (!hasStorage()) {
+    if (Date.now() - start >= maxWaitMs) return false;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  return true;
+}
+async function lsGet(key) {
+  try { const r = await window.storage.get(key, false); return r; }
+  catch (e) { return null; }
+}
+async function lsSet(key, value) {
+  try { const r = await window.storage.set(key, value, false); return r; }
+  catch (e) { return null; }
+}
+async function lsDelete(key) {
+  try { const r = await window.storage.delete(key, false); return r; }
+  catch (e) { return null; }
+}
+async function lsList(prefix) {
+  try { const r = await window.storage.list(prefix, false); return r; }
+  catch (e) { return null; }
+}
+
+const EVENT_PREFIX = "event:";
+const IMG_PREFIX = "img:";
+const INV_PREFIX = "inv:";
+const DEFAULTS_KEY = "profile:defaults";
+const ACTIVE_KEY = "meta:active";
+const LEGACY_EVENT_PREFIX = "eps:event:";
+const LEGACY_IMG_PREFIX = "eps:img:";
+const LEGACY_EVENTS_INDEX_KEY = "eps:events";
+
+function idsFromList(listResult, prefix) {
+  if (!listResult || !Array.isArray(listResult.keys)) return [];
+  return listResult.keys.map((k) => (k.startsWith(prefix) ? k.slice(prefix.length) : k)).filter(Boolean);
+}
+
+function fileToDataURL(file, maxDim = 900) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+          else { width = Math.round(width * maxDim / height); height = maxDim; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function rawFileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+const US_STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
+
+/* ════════════════════════════════════════════════════════
+   SMALL COMPONENTS
+════════════════════════════════════════════════════════ */
+const Field = ({ label, children }) => (
+  <div className="field">
+    <label className="flabel">{label}</label>
+    {children}
+  </div>
+);
+
+const SegOpts = ({ value, onChange, options }) => (
+  <div className="seg">
+    {options.map(([v, label]) => (
+      <button type="button" key={v} className={value === v ? "on" : ""} onClick={() => onChange(v)}>{label}</button>
+    ))}
+  </div>
+);
+
+const Dropzone = ({ image, onImage, onRemove }) => {
+  const [over, setOver] = useState(false);
+  const inputRef = useRef(null);
+  const handleFiles = async (files) => {
+    const f = files && files[0];
+    if (!f || !f.type.startsWith("image/")) return;
+    try { const dataUrl = await fileToDataURL(f); onImage(dataUrl); } catch (e) {}
+  };
+  if (image) {
+    return (
+      <div className="dz-thumb-wrap">
+        <img className="dz-thumb" src={image} alt="" />
+        <button className="dz-remove" onClick={onRemove}>✕</button>
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`dz ${over ? "over" : ""}`}
+      onClick={() => inputRef.current && inputRef.current.click()}
+      onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => { e.preventDefault(); setOver(false); handleFiles(e.dataTransfer.files); }}
+    >
+      <span style={{ fontSize: 22 }}>📷</span>
+      <span><span className="dz-link" style={{ textDecoration: "underline", fontWeight: 600 }}>Add a reference photo</span> or drag one here</span>
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleFiles(e.target.files)} />
+    </div>
+  );
+};
+
+const PdfFileInput = ({ onFile, label = "Upload invoice PDF" }) => {
+  const [over, setOver] = useState(false);
+  const inputRef = useRef(null);
+  const handleFiles = (files) => {
+    const f = files && files[0];
+    if (!f || f.type !== "application/pdf") return;
+    onFile(f);
+  };
+  return (
+    <div
+      className={`dz ${over ? "over" : ""}`}
+      onClick={() => inputRef.current && inputRef.current.click()}
+      onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => { e.preventDefault(); setOver(false); handleFiles(e.dataTransfer.files); }}
+    >
+      <span style={{ fontSize: 22 }}>📄</span>
+      <span><span className="dz-link" style={{ textDecoration: "underline", fontWeight: 600 }}>{label}</span> or drag one here</span>
+      <input ref={inputRef} type="file" accept="application/pdf,.pdf" style={{ display: "none" }} onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
+    </div>
+  );
+};
+
+const AutoInput = ({ value, onChange, onBlur, suggestions = [], placeholder, className, inputProps = {} }) => {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const show = typeof value === "string" && value.trim().length >= 2;
+  const filtered = show ? suggestions.filter((s) => s.toLowerCase().includes(value.toLowerCase()) && s.toLowerCase() !== value.toLowerCase()).slice(0, 6) : [];
+  useEffect(() => {
+    const close = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <input
+        {...inputProps}
+        className={className}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={onBlur}
+      />
+      {open && filtered.length > 0 && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--bg-2)", borderRadius: "var(--r-sm)", boxShadow: "0 4px 14px rgba(0,0,0,.14)", zIndex: 20, marginTop: 4, overflow: "hidden" }}>
+          {filtered.map((s) => (
+            <button
+              key={s}
+              type="button"
+              style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 12px", border: "none", background: "transparent", cursor: "pointer", fontSize: 14, fontFamily: "var(--font)" }}
+              onMouseDown={(e) => { e.preventDefault(); onChange(s); setOpen(false); }}
+            >{s}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SCHED_BLOCK_DEFS = [
+  { key: "cargoLoadIn", title: "Cargo Load-In", addLabel: "＋ Add Cargo Load-In", itemsLabel: "Items Being Moved", itemsPlaceholder: "Buckets, mechanics, vases, arrangements…" },
+  { key: "cargoLoadOut", title: "Cargo Load-Out", addLabel: "＋ Add Cargo Load-Out", itemsLabel: "Items Being Moved", itemsPlaceholder: "Empty buckets, leftover product, rentals…" },
+  { key: "dismantling", title: "Dismantling", addLabel: "＋ Add Dismantling", itemsLabel: "Items / Notes", itemsPlaceholder: "Installations to strike, rentals to return, trash removal…" },
+];
+
+const DayCard = ({ day, label, allowRemove, onRemove, onDateChange, staffNames, onAddRow, onRemoveRow, onUpRow, onToggleBlock, onUpBlockField, onAddObjective, onRemoveObjective, onUpObjective }) => (
+  <div className="col-card">
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+      <span className="badge badge-blue" style={{ fontSize: 10, padding: "3px 8px" }}>{label}</span>
+      <input className="finput" type="date" style={{ flex: 1, minWidth: 160 }} value={day.date} onChange={(e) => onDateChange(e.target.value)} />
+      {allowRemove && <button className="btn btn-red btn-xs" onClick={onRemove}>Remove</button>}
+    </div>
+
+    <div className="recipe-lbl"><span>Timeline · by Location &amp; Staff</span></div>
+    <div className="sched-head-row"><span>Time</span><span>Location</span><span>Task / Activity</span><span>Group</span><span>Names</span><span></span></div>
+    {day.rows.map((row) => (
+      <div className="sched-row" key={row.id}>
+        <input className="minput" value={row.time} onChange={(e) => onUpRow(row.id, "time", e.target.value)} placeholder="8:00 AM" />
+        <input className="minput" value={row.location} onChange={(e) => onUpRow(row.id, "location", e.target.value)} placeholder="Bridal suite" />
+        <input className="minput" value={row.task} onChange={(e) => onUpRow(row.id, "task", e.target.value)} placeholder="Mechanics prep" />
+        <input className="minput" value={row.groupLabel} onChange={(e) => onUpRow(row.id, "groupLabel", e.target.value)} placeholder="Team / Crew / Vehicle" />
+        <AutoInput className="minput" suggestions={staffNames} value={row.staff} onChange={(v) => onUpRow(row.id, "staff", v)} placeholder="Names, comma separated" />
+        <button className="btn-x" disabled={day.rows.length === 1} onClick={() => onRemoveRow(row.id)}>✕</button>
+      </div>
+    ))}
+    <button className="btn btn-grey btn-xs" style={{ marginBottom: 18 }} onClick={onAddRow}>＋ Add row</button>
+
+    <div className="recipe-lbl"><span>Design Day Objectives</span></div>
+    {(day.objectives || []).length === 0 && <div style={{ fontSize: 13, fontStyle: "italic", color: "var(--label-2)", marginBottom: 10 }}>No objectives added yet.</div>}
+    {(day.objectives || []).map((obj, oi) => (
+      <div className="sched-row" style={{ gridTemplateColumns: "1fr 28px" }} key={oi}>
+        <input className="minput" value={obj} onChange={(e) => onUpObjective(oi, e.target.value)} placeholder="Receive wholesale flowers" />
+        <button className="btn-x" onClick={() => onRemoveObjective(oi)}>✕</button>
+      </div>
+    ))}
+    <button className="btn btn-grey btn-xs" style={{ marginBottom: 18 }} onClick={onAddObjective}>＋ Add objective</button>
+
+    <div className="sched-toggle-stack">
+      {SCHED_BLOCK_DEFS.map((bd) => (
+        day[bd.key] ? (
+          <div className="sched-block" key={bd.key}>
+            <div className="sched-block-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>{bd.title}</span>
+              <button className="btn-x" onClick={() => onToggleBlock(bd.key)}>✕</button>
+            </div>
+            <div className="grid g2" style={{ marginBottom: 10 }}>
+              <Field label="Location"><input className="minput" value={day[bd.key].location} onChange={(e) => onUpBlockField(bd.key, "location", e.target.value)} placeholder="Service entrance, dock B" /></Field>
+              <Field label="Staff Present"><AutoInput className="minput" suggestions={staffNames} value={day[bd.key].staff} onChange={(v) => onUpBlockField(bd.key, "staff", v)} placeholder="Names, comma separated" /></Field>
+            </div>
+            <Field label={bd.itemsLabel}><textarea className="ftextarea" style={{ minHeight: 54 }} value={day[bd.key].items} onChange={(e) => onUpBlockField(bd.key, "items", e.target.value)} placeholder={bd.itemsPlaceholder} /></Field>
+          </div>
+        ) : (
+          <button key={bd.key} type="button" className="btn btn-dashed" onClick={() => onToggleBlock(bd.key)}>{bd.addLabel}</button>
+        )
+      ))}
+    </div>
+  </div>
+);
+
+function EventProductionSheet() {
+  const PAGES = ["Home", "Event", "Contacts", "Build", "Production", "Fresh", "Hard Goods", "Logistics", "Team Sheet", "Event Timeline", "Library", "Vendors"];
+  const [page, setPage] = useState(0);
+  const [events, setEvents] = useState([]);
+  const [currentEventId, setCurrentEventId] = useState(null);
+  const [info, setInfo] = useState(blankInfo());
+  const [contacts, setContacts] = useState(() => [newContact()]);
+  const [collections, setCollections] = useState(() => [newCollection("")]);
+  const [vendors, setVendors] = useState(() => []);
+  const [library, setLibrary] = useState(EMPTY_LIB);
+  const [hgExtras, setHgExtras] = useState([]);
+  const [finalLoad, setFinalLoad] = useState([]);
+  const [orderUnits, setOrderUnits] = useState({});
+  const [preEventDays, setPreEventDays] = useState(() => [newDayCard()]);
+  const [eventDay, setEventDay] = useState(() => [newDayCard()]);
+  const [postEventDays, setPostEventDays] = useState(() => [newDayCard()]);
+  const [scheduleNotes, setScheduleNotes] = useState("");
+  const [showTimelineContacts, setShowTimelineContacts] = useState(true);
+  const [floorplans, setFloorplans] = useState(() => [newFloorplan()]);
+  const [newColName, setNewColName] = useState("");
+  const [newHg, setNewHg] = useState({ name: "", qty: "" });
+  const [newLoad, setNewLoad] = useState({ name: "", qty: "" });
+  const [saveState, setSaveState] = useState("Loading…");
+  const [pdfScope, setPdfScope] = useState(null);
+  const [openIdx, setOpenIdx] = useState({});
+  const [showReset, setShowReset] = useState(false);
+  const [showResetAll, setShowResetAll] = useState(false);
+  const [checkedStems, setCheckedStems] = useState({});
+  const [newLibItem, setNewLibItem] = useState({});
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [defaults, setDefaults] = useState(null);
+  const [defaultsStatus, setDefaultsStatus] = useState("No defaults saved yet");
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
+  const [pendingSwitchId, setPendingSwitchId] = useState(null);
+  const [fileRestoreData, setFileRestoreData] = useState(null);
+  const [showFileRestoreConfirm, setShowFileRestoreConfirm] = useState(false);
+  const [autofillDrag, setAutofillDrag] = useState(false);
+  const [autofillPreview, setAutofillPreview] = useState(null);
+  const [showAutofillConfirm, setShowAutofillConfirm] = useState(false);
+  const [aiText, setAiText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiPreview, setAiPreview] = useState(null);
+  const [showAiPreview, setShowAiPreview] = useState(false);
+  const [vendorPdfLoading, setVendorPdfLoading] = useState(false);
+  const [vendorPdfError, setVendorPdfError] = useState("");
+  const autofillFileRef = useRef(null);
+  const backupFileRef = useRef(null);
+  const loaded = useRef(false);
+  const saveTimer = useRef(null);
+  const pdRef = useRef(null);
+  const lastSavedCoreRef = useRef(null);
+
+  const writeChain = useRef(Promise.resolve());
+  const queueWrite = (fn) => { const p = writeChain.current.then(fn, fn); writeChain.current = p.then(() => {}, () => {}); return p; };
+
+  const applyEventData = async (id, rawValue) => {
+    let d = {};
+    if (rawValue) { try { d = JSON.parse(rawValue) || {}; } catch (e) { d = {}; } }
+    const infoV = d.info ? { ...blankInfo(), ...d.info } : blankInfo();
+    const contactsV = (Array.isArray(d.contacts) && d.contacts.length ? d.contacts : [newContact()]).map((c) => ({ ...c, includeInPdf: c.includeInPdf !== false }));
+    const colsV = Array.isArray(d.collections) && d.collections.length ? reindex(d.collections) : [newCollection("")];
+    for (const c of colsV) {
+      for (const pc of c.pieces || []) {
+        if (pc.image === "@img") {
+          try { const ir = await lsGet(`${IMG_PREFIX}${id}:${pc.id}`); pc.image = ir && ir.value ? ir.value : null; }
+          catch (e) { pc.image = null; }
+        }
+      }
+    }
+    const hgExtrasV = Array.isArray(d.hgExtras) ? d.hgExtras : [];
+    const finalLoadV = Array.isArray(d.finalLoad) ? d.finalLoad : [];
+    const orderUnitsV = d.orderUnits || {};
+    const vendorsV = Array.isArray(d.vendors) ? d.vendors : [];
+    for (const v of vendorsV) {
+      for (const inv of v.invoices || []) {
+        if (inv.file === "@pdf") {
+          try { const ir = await lsGet(`${INV_PREFIX}${id}:${v.id}:${inv.id}`); inv.file = ir && ir.value ? ir.value : null; }
+          catch (e) { inv.file = null; }
+        }
+      }
+    }
+    const preEventDaysV = (Array.isArray(d.preEventDays) && d.preEventDays.length ? d.preEventDays : [newDayCard()]).map(normalizeDayCard);
+    const postEventDaysV = (Array.isArray(d.postEventDays) && d.postEventDays.length ? d.postEventDays : [newDayCard()]).map(normalizeDayCard);
+    let eventDayV;
+    if (Array.isArray(d.eventDay) && d.eventDay.length) {
+      eventDayV = d.eventDay.map(normalizeDayCard);
+    } else if (Array.isArray(d.scheduleDays) && d.scheduleDays.length) {
+      const legacy = d.scheduleDays[0];
+      const legacyBlock = (b) => (b && (b.location || b.staff || b.items)) ? { location: b.location || "", staff: b.staff || "", items: b.items || "" } : null;
+      eventDayV = [normalizeDayCard({
+        id: legacy.id || uid(),
+        date: legacy.date || "",
+        rows: Array.isArray(legacy.rows) && legacy.rows.length ? legacy.rows.map((r) => ({ id: r.id || uid(), time: r.time || "", location: r.location || "", task: r.task || "", staff: r.staff || "" })) : [newScheduleRow()],
+        cargoLoadIn: legacyBlock(legacy.loadIn),
+        cargoLoadOut: legacyBlock(legacy.loadOut),
+        dismantling: null,
+      })];
+    } else {
+      eventDayV = [newDayCard()];
+    }
+    const scheduleNotesV = typeof d.scheduleNotes === "string" ? d.scheduleNotes : "";
+    const showTimelineContactsV = d.showTimelineContacts !== false;
+    const floorplansV = Array.isArray(d.floorplans) && d.floorplans.length ? d.floorplans : [newFloorplan()];
+
+    setInfo(infoV); setContacts(contactsV); setCollections(colsV); setVendors(vendorsV);
+    setHgExtras(hgExtrasV); setFinalLoad(finalLoadV); setOrderUnits(orderUnitsV);
+    setPreEventDays(preEventDaysV); setPostEventDays(postEventDaysV); setEventDay(eventDayV);
+    setScheduleNotes(scheduleNotesV); setFloorplans(floorplansV); setShowTimelineContacts(showTimelineContactsV);
+
+    return makeCorePayload({ info: infoV, contacts: contactsV, collections: colsV, vendors: vendorsV, hgExtras: hgExtrasV, finalLoad: finalLoadV, orderUnits: orderUnitsV, preEventDays: preEventDaysV, eventDay: eventDayV, postEventDays: postEventDaysV, scheduleNotes: scheduleNotesV, floorplans: floorplansV, showTimelineContacts: showTimelineContactsV });
+  };
+
+  const buildEventCore = () => makeCorePayload({ info, contacts, collections, vendors, hgExtras, finalLoad, orderUnits, preEventDays, eventDay, postEventDays, scheduleNotes, floorplans, showTimelineContacts });
+  const currentCoreJSON = useMemo(() => JSON.stringify(buildEventCore()), [info, contacts, collections, vendors, hgExtras, finalLoad, orderUnits, preEventDays, eventDay, postEventDays, scheduleNotes, floorplans, showTimelineContacts]);
+  const isDirty = !eventsLoading && !!currentEventId && currentCoreJSON !== lastSavedCoreRef.current;
+
+  const saveCurrentEvent = async (id) => {
+    if (!id) return false;
+    setSaveState("Saving…");
+    const core = buildEventCore();
+    const coreJSON = JSON.stringify(core);
+    if (!hasStorage()) { setSaveState("Error — try again"); return false; }
+    try {
+      const payload = { ...core, _savedAt: Date.now() };
+      const res = await queueWrite(() => lsSet(`${EVENT_PREFIX}${id}`, JSON.stringify(payload)));
+      if (!res) throw new Error("save failed");
+      lastSavedCoreRef.current = coreJSON;
+      const label = (payload.info && (payload.info.client || payload.info.venue)) || "Untitled Event";
+      setEvents((prev) => {
+        const entry = { id, label, eventDate: (payload.info && payload.info.event_date) || "", updatedAt: payload._savedAt, status: "loaded" };
+        return prev.some((e) => e.id === id) ? prev.map((e) => (e.id === id ? entry : e)) : [...prev, entry];
+      });
+      lsSet(ACTIVE_KEY, id);
+      setSaveState(`Saved · ${new Date(payload._savedAt).toLocaleTimeString()}`);
+      return true;
+    } catch (e) { setSaveState("Error — try again"); return false; }
+  };
+  const handleManualSave = () => { if (!currentEventId) return; clearTimeout(saveTimer.current); saveCurrentEvent(currentEventId); };
+
+  const loadEventById = async (id) => {
+    let raw = null;
+    try { raw = await lsGet(`${EVENT_PREFIX}${id}`); } catch (e) {}
+    const core = await applyEventData(id, raw && raw.value ? raw.value : null);
+    lastSavedCoreRef.current = JSON.stringify(core);
+    setCurrentEventId(id);
+    setSaveState("Loaded");
+    lsSet(ACTIVE_KEY, id);
+    return core;
+  };
+
+  const migrateLegacyEvents = async () => {
+    let legacyList = null;
+    try { legacyList = await lsList(LEGACY_EVENT_PREFIX); } catch (e) {}
+    const legacyIds = idsFromList(legacyList, LEGACY_EVENT_PREFIX);
+    if (!legacyIds.length) return;
+    for (const id of legacyIds) {
+      try {
+        const raw = await lsGet(`${LEGACY_EVENT_PREFIX}${id}`);
+        if (!raw || !raw.value) continue;
+        let d = {};
+        try { d = JSON.parse(raw.value) || {}; } catch (e) { continue; }
+        for (const c of d.collections || []) {
+          for (const pc of c.pieces || []) {
+            if (pc.image === "@img") {
+              try {
+                const ir = await lsGet(`${LEGACY_IMG_PREFIX}${pc.id}`);
+                if (ir && ir.value) await lsSet(`${IMG_PREFIX}${id}:${pc.id}`, ir.value);
+                try { await lsDelete(`${LEGACY_IMG_PREFIX}${pc.id}`); } catch (e2) {}
+              } catch (e3) {}
+            }
+          }
+        }
+        await lsSet(`${EVENT_PREFIX}${id}`, raw.value);
+        try { await lsDelete(`${LEGACY_EVENT_PREFIX}${id}`); } catch (e) {}
+      } catch (e) {}
+    }
+    try { await lsDelete(LEGACY_EVENTS_INDEX_KEY); } catch (e) {}
+  };
+
+  useEffect(() => {
+    (async () => {
+      const ready = await waitForStorage();
+      if (!ready) {
+        const entry = newEventEntry(info.client || info.venue || "Untitled Event");
+        lastSavedCoreRef.current = null;
+        setEvents([entry]);
+        setCurrentEventId(entry.id);
+        setSaveState("Autosave unavailable here");
+        setEventsLoading(false);
+        loaded.current = true;
+        return;
+      }
+      try { await migrateLegacyEvents(); } catch (e) {}
+
+      let listResult = null;
+      try { listResult = await lsList(EVENT_PREFIX); } catch (e) {}
+      const ids = idsFromList(listResult, EVENT_PREFIX);
+
+      (async () => {
+        try {
+          const r = await lsGet(DEFAULTS_KEY);
+          if (r && r.value) { const d = JSON.parse(r.value); setDefaults(d); setDefaultsStatus(`Defaults saved · ${d._savedAt ? new Date(d._savedAt).toLocaleString() : ""}`); }
+          else setDefaultsStatus("No defaults saved yet");
+        } catch (e) { setDefaultsStatus("No defaults saved yet"); }
+      })();
+      (async () => {
+        try { const r = await lsGet("eps:library"); if (r && r.value) setLibrary((prev) => ({ ...prev, ...JSON.parse(r.value) })); } catch (e) {}
+      })();
+
+      if (ids.length === 0) {
+        const entry = newEventEntry(info.client || info.venue || "Untitled Event");
+        lastSavedCoreRef.current = null;
+        setEvents([entry]);
+        setCurrentEventId(entry.id);
+        setSaveState("New — not saved yet");
+        setEventsLoading(false);
+        loaded.current = true;
+        return;
+      }
+
+      let activeId = ids[0];
+      try { const ar = await lsGet(ACTIVE_KEY); if (ar && ar.value && ids.includes(ar.value)) activeId = ar.value; } catch (e) {}
+
+      const core = await loadEventById(activeId);
+      const placeholderEvents = ids.map((id) => (
+        id === activeId
+          ? { id, label: (core.info && (core.info.client || core.info.venue)) || "Untitled Event", eventDate: (core.info && core.info.event_date) || "", updatedAt: 0, status: "loaded" }
+          : { id, label: "Loading…", eventDate: "", updatedAt: 0, status: "pending" }
+      ));
+      setEvents(placeholderEvents);
+      setEventsLoading(false);
+      loaded.current = true;
+
+      ids.filter((id) => id !== activeId).forEach((id) => {
+        (async () => {
+          let label = "Untitled Event", eventDate = "", updatedAt = 0;
+          try {
+            const r = await lsGet(`${EVENT_PREFIX}${id}`);
+            if (r && r.value) { const d = JSON.parse(r.value); label = (d.info && (d.info.client || d.info.venue)) || "Untitled Event"; eventDate = (d.info && d.info.event_date) || ""; updatedAt = d._savedAt || 0; }
+          } catch (e) {}
+          setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, label, eventDate, updatedAt, status: "loaded" } : e)));
+        })();
+      });
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!loaded.current || !currentEventId) return;
+    if (currentCoreJSON === lastSavedCoreRef.current) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => { saveCurrentEvent(currentEventId); }, 900);
+    return () => clearTimeout(saveTimer.current);
+  }, [currentCoreJSON, currentEventId]);
+
+  useEffect(() => {
+    if (!loaded.current) return;
+    const t = setTimeout(() => { if (!hasStorage()) return; lsSet("eps:library", JSON.stringify(library)); }, 700);
+    return () => clearTimeout(t);
+  }, [library]);
+
+  const requestSwitchEvent = (id) => {
+    if (id === currentEventId) return;
+    if (isDirty) { setPendingSwitchId(id); setShowSwitchConfirm(true); return; }
+    performSwitchEvent(id);
+  };
+  const performSwitchEvent = async (id) => {
+    loaded.current = false;
+    clearTimeout(saveTimer.current);
+    await loadEventById(id);
+    setPage(0);
+    loaded.current = true;
+  };
+
+  const createBlankEvent = async () => {
+    loaded.current = false;
+    clearTimeout(saveTimer.current);
+    const id = uid();
+    let infoV = blankInfo();
+    let contactsV = [newContact()];
+    if (defaults) {
+      if (defaults.info) infoV = { ...infoV, ...defaults.info };
+      if (Array.isArray(defaults.contacts) && defaults.contacts.length) contactsV = defaults.contacts.map((c) => ({ ...c, id: uid() }));
+    }
+    setInfo(infoV); setContacts(contactsV); setCollections([newCollection("")]); setVendors([]);
+    setHgExtras([]); setFinalLoad([]); setOrderUnits({});
+    setPreEventDays([newDayCard()]); setPostEventDays([newDayCard()]); setEventDay([newDayCard()]);
+    setScheduleNotes(""); setFloorplans([newFloorplan()]); setShowTimelineContacts(true);
+    lastSavedCoreRef.current = null;
+    setEvents((prev) => [...prev, { id, label: infoV.client || "Untitled Event", eventDate: "", updatedAt: 0, status: "unsaved" }]);
+    setCurrentEventId(id);
+    setSaveState(defaults ? "New event — defaults applied, not saved yet" : "New — not saved yet");
+    setPage(0);
+    loaded.current = true;
+  };
+  const addNewEvent = () => {
+    if (currentEventId && isDirty) { setPendingSwitchId("__new__"); setShowSwitchConfirm(true); return; }
+    createBlankEvent();
+  };
+  const confirmSwitchSaveFirst = async () => {
+    const target = pendingSwitchId;
+    setShowSwitchConfirm(false); setPendingSwitchId(null);
+    if (currentEventId) await saveCurrentEvent(currentEventId);
+    if (target === "__new__") await createBlankEvent();
+    else if (target) await performSwitchEvent(target);
+  };
+  const confirmSwitchDiscard = () => {
+    const target = pendingSwitchId;
+    setShowSwitchConfirm(false); setPendingSwitchId(null);
+    if (target === "__new__") createBlankEvent();
+    else if (target) performSwitchEvent(target);
+  };
+
+  const doDeleteEvent = async () => {
+    const idToDelete = currentEventId;
+    if (hasStorage()) {
+      try { await queueWrite(() => lsDelete(`${EVENT_PREFIX}${idToDelete}`)); } catch (e) {}
+      try {
+        const imgs = await lsList(`${IMG_PREFIX}${idToDelete}:`);
+        const imgKeys = imgs && Array.isArray(imgs.keys) ? imgs.keys : [];
+        for (const k of imgKeys) { try { await queueWrite(() => lsDelete(k)); } catch (e) {} }
+      } catch (e) {}
+      try {
+        const invs = await lsList(`${INV_PREFIX}${idToDelete}:`);
+        const invKeys = invs && Array.isArray(invs.keys) ? invs.keys : [];
+        for (const k of invKeys) { try { await queueWrite(() => lsDelete(k)); } catch (e) {} }
+      } catch (e) {}
+    }
+    const remaining = events.filter((e) => e.id !== idToDelete);
+    loaded.current = false;
+    if (remaining.length > 0) { setEvents(remaining); await loadEventById(remaining[0].id); }
+    else { setEvents([]); await createBlankEvent(); }
+    setShowReset(false); setPage(0);
+    loaded.current = true;
+  };
+
+  const doResetAllData = async () => {
+    loaded.current = false;
+    clearTimeout(saveTimer.current);
+    if (hasStorage()) {
+      try {
+        const listResult = await lsList(EVENT_PREFIX);
+        const ids = idsFromList(listResult, EVENT_PREFIX);
+        for (const id of ids) {
+          try { await queueWrite(() => lsDelete(`${EVENT_PREFIX}${id}`)); } catch (e) {}
+          try {
+            const imgs = await lsList(`${IMG_PREFIX}${id}:`);
+            const imgKeys = imgs && Array.isArray(imgs.keys) ? imgs.keys : [];
+            for (const k of imgKeys) { try { await queueWrite(() => lsDelete(k)); } catch (e) {} }
+          } catch (e) {}
+          try {
+            const invs = await lsList(`${INV_PREFIX}${id}:`);
+            const invKeys = invs && Array.isArray(invs.keys) ? invs.keys : [];
+            for (const k of invKeys) { try { await queueWrite(() => lsDelete(k)); } catch (e) {} }
+          } catch (e) {}
+        }
+        try { await queueWrite(() => lsDelete(ACTIVE_KEY)); } catch (e) {}
+        try { await queueWrite(() => lsDelete(DEFAULTS_KEY)); } catch (e) {}
+        try { await queueWrite(() => lsDelete("eps:library")); } catch (e) {}
+      } catch (e) {}
+    }
+    const id = uid();
+    setInfo(blankInfo()); setContacts([newContact()]); setCollections([newCollection("")]); setVendors([]);
+    setHgExtras([]); setFinalLoad([]); setOrderUnits({});
+    setPreEventDays([newDayCard()]); setPostEventDays([newDayCard()]); setEventDay([newDayCard()]);
+    setScheduleNotes(""); setFloorplans([newFloorplan()]); setShowTimelineContacts(true);
+    setDefaults(null); setDefaultsStatus("No defaults saved yet");
+    setLibrary(EMPTY_LIB);
+    lastSavedCoreRef.current = null;
+    setEvents([{ id, label: "Untitled Event", eventDate: "", updatedAt: 0, status: "unsaved" }]);
+    setCurrentEventId(id);
+    setSaveState("New — not saved yet");
+    setShowResetAll(false);
+    setPage(0);
+    loaded.current = true;
+  };
+
+  const saveAsDefaults = async () => {
+    setDefaultsStatus("Saving defaults…");
+    if (!hasStorage()) { setDefaultsStatus("Storage unavailable"); return; }
+    const payload = {
+      info: DEFAULT_RECURRING_INFO_FIELDS.reduce((acc, k) => { acc[k] = info[k] || ""; return acc; }, {}),
+      contacts: contacts.filter((c) => (c.name || "").trim() || (c.businessName || "").trim()).map((c) => ({ ...c })),
+      _savedAt: Date.now(),
+    };
+    try {
+      const res = await queueWrite(() => lsSet(DEFAULTS_KEY, JSON.stringify(payload)));
+      if (!res) throw new Error("failed");
+      setDefaults(payload);
+      setDefaultsStatus(`Defaults saved · ${new Date(payload._savedAt).toLocaleString()}`);
+    } catch (e) { setDefaultsStatus("Error saving defaults — try again"); }
+  };
+  const loadDefaultsIntoCurrent = () => {
+    if (!defaults) { setDefaultsStatus("No defaults saved yet"); return; }
+    if (defaults.info) setInfo((prev) => ({ ...prev, ...defaults.info }));
+    if (Array.isArray(defaults.contacts) && defaults.contacts.length) {
+      setContacts((prev) => {
+        const key = (c) => `${(c.name || "").trim().toLowerCase()}|${(c.businessName || "").trim().toLowerCase()}`;
+        const existing = new Set(prev.map(key));
+        const toAdd = defaults.contacts.filter((c) => !existing.has(key(c))).map((c) => ({ ...c, id: uid() }));
+        if (!toAdd.length) return prev;
+        const base = prev.length === 1 && !(prev[0].name || "").trim() && !(prev[0].businessName || "").trim() ? [] : prev;
+        return [...base, ...toAdd];
+      });
+    }
+    setDefaultsStatus("Defaults loaded into this event");
+  };
+
+  function downloadJSON(filename, dataObj) {
+    try {
+      const blob = new Blob([JSON.stringify(dataObj, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) {} }, 30000);
+      return true;
+    } catch (e) { return false; }
+  }
+  const doDownloadBackup = () => {
+    const payload = { _backup: "event-production-sheet", _v: 2, _savedAt: Date.now(), info, contacts, collections, vendors, hgExtras, finalLoad, orderUnits, preEventDays, eventDay, postEventDays, scheduleNotes, floorplans, showTimelineContacts, library };
+    const name = `${safeFile(info.client || info.venue || "Event")} backup ${new Date().toISOString().slice(0, 10)}.json`;
+    const ok = downloadJSON(name, payload);
+    setSaveState(ok ? "Downloaded backup file" : "Download failed");
+  };
+  const onRestoreFileChosen = async (file) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const d = JSON.parse(text);
+      setFileRestoreData(d);
+      setShowFileRestoreConfirm(true);
+    } catch (e) { setSaveState("Couldn't read that file"); }
+    if (backupFileRef.current) backupFileRef.current.value = "";
+  };
+  const confirmFileRestore = () => {
+    const d = fileRestoreData;
+    if (d) {
+      setInfo(d.info ? { ...blankInfo(), ...d.info } : blankInfo());
+      setContacts(Array.isArray(d.contacts) && d.contacts.length ? d.contacts : [newContact()]);
+      setCollections(Array.isArray(d.collections) && d.collections.length ? reindex(d.collections) : [newCollection("")]);
+      const vendorsV = Array.isArray(d.vendors) ? d.vendors : [];
+      setVendors(vendorsV);
+      if (hasStorage() && currentEventId) {
+        vendorsV.forEach((v) => {
+          (v.invoices || []).forEach((inv) => {
+            if (inv.file) queueWrite(() => lsSet(`${INV_PREFIX}${currentEventId}:${v.id}:${inv.id}`, inv.file));
+          });
+        });
+      }
+      setHgExtras(Array.isArray(d.hgExtras) ? d.hgExtras : []);
+      setFinalLoad(Array.isArray(d.finalLoad) ? d.finalLoad : []);
+      setOrderUnits(d.orderUnits || {});
+      setPreEventDays(Array.isArray(d.preEventDays) && d.preEventDays.length ? d.preEventDays : [newDayCard()]);
+      setPostEventDays(Array.isArray(d.postEventDays) && d.postEventDays.length ? d.postEventDays : [newDayCard()]);
+      setEventDay(Array.isArray(d.eventDay) && d.eventDay.length ? d.eventDay : [newDayCard()]);
+      setScheduleNotes(typeof d.scheduleNotes === "string" ? d.scheduleNotes : "");
+      setShowTimelineContacts(d.showTimelineContacts !== false);
+      setFloorplans(Array.isArray(d.floorplans) && d.floorplans.length ? d.floorplans : [newFloorplan()]);
+      if (d.library && typeof d.library === "object") setLibrary((prev) => ({ ...prev, ...d.library }));
+      lastSavedCoreRef.current = null;
+      setSaveState("Restored from file — not saved yet");
+    }
+    setShowFileRestoreConfirm(false);
+    setFileRestoreData(null);
+  };
+
+  const runAiAutofill = async () => {
+    const text = aiText.trim();
+    if (!text) return;
+    setAiLoading(true); setAiError(""); setAiPreview(null);
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 4000,
+          system: AI_AUTOFILL_SYSTEM,
+          messages: [{ role: "user", content: text }],
+        }),
+      });
+      const data = await resp.json();
+      const textBlocks = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
+      const clean = textBlocks.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      const norm = {
+        info: parsed && typeof parsed.info === "object" && parsed.info ? parsed.info : {},
+        contacts: Array.isArray(parsed && parsed.contacts) ? parsed.contacts : [],
+        vendors: Array.isArray(parsed && parsed.vendors) ? parsed.vendors : [],
+        collections: Array.isArray(parsed && parsed.collections) ? parsed.collections : [],
+        days: Array.isArray(parsed && parsed.days) ? parsed.days : [],
+        hgExtras: Array.isArray(parsed && parsed.hgExtras) ? parsed.hgExtras : [],
+      };
+      setAiPreview(norm);
+      setShowAiPreview(true);
+    } catch (e) {
+      setAiError("Couldn't parse that. Try simplifying the text, or check your connection and try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const nrmKey = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const dedupeArr = (arr, keyFn) => {
+    const seen = new Set();
+    return arr.filter((x) => {
+      const k = keyFn(x);
+      if (!k || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+
+  const applyAiAutofill = () => {
+    const d = aiPreview;
+    if (!d) return;
+
+    if (d.info && Object.keys(d.info).length) {
+      setInfo((prev) => {
+        const next = { ...prev };
+        Object.keys(d.info).forEach((k) => {
+          if (Object.prototype.hasOwnProperty.call(next, k) && !String(next[k] || "").trim() && d.info[k]) next[k] = d.info[k];
+        });
+        return next;
+      });
+    }
+
+    const goodContacts = dedupeArr(d.contacts.filter((c) => c && (c.name || "").trim()), (c) => nrmKey(c.name));
+    if (goodContacts.length) {
+      setContacts((prev) => {
+        const base = prev.length === 1 && !prev[0].name.trim() ? [] : prev;
+        const existingKeys = new Set(base.map((c) => nrmKey(c.name)));
+        const added = goodContacts.filter((c) => !existingKeys.has(nrmKey(c.name))).map((c) => ({
+          ...newContact(), name: c.name || "",
+          contactType: ["staff", "venue", "vendor"].includes(c.contactType) ? c.contactType : "",
+          businessName: c.businessName || "", role: c.role || "", phone: c.phone || "", email: c.email || "", notes: c.notes || "",
+        }));
+        return added.length ? [...base, ...added] : base;
+      });
+    }
+
+    const goodVendors = dedupeArr(d.vendors.filter((v) => v && (v.name || "").trim()), (v) => nrmKey(v.name));
+    if (goodVendors.length) {
+      setVendors((prev) => {
+        const existingKeys = new Set(prev.map((v) => nrmKey(v.name)));
+        const added = goodVendors.filter((v) => !existingKeys.has(nrmKey(v.name))).map((v) => ({
+          ...newVendor(), name: v.name || "", category: v.category || "", contactName: v.contactName || "", phone: v.phone || "", email: v.email || "", notes: v.notes || "",
+        }));
+        return added.length ? [...prev, ...added] : prev;
+      });
+    }
+
+    const goodCollections = dedupeArr(d.collections.filter((c) => c && (c.name || "").trim()), (c) => nrmKey(c.name));
+    if (goodCollections.length) {
+      setCollections((prev) => {
+        const blank = prev.length === 1 && !prev[0].name.trim() && prev[0].pieces.length === 1 && !prev[0].pieces[0].name.trim();
+        let base = blank ? [] : prev.slice();
+        goodCollections.forEach((c) => {
+          const cleanPieces = dedupeArr((Array.isArray(c.pieces) ? c.pieces : []).filter((p) => p && (p.name || "").trim()), (p) => nrmKey(p.name)).map((p) => ({
+            ...newPiece(), name: p.name || "", qty: String(p.qty || "1"), pullMode: p.pullMode === "total" ? "total" : "per",
+            stems: dedupeArr((Array.isArray(p.stems) ? p.stems : []).filter((s) => s && (s.name || "").trim()), (s) => nrmKey(s.name)).map((s) => ({
+              ...newStem(), name: s.name || "", qty: String(s.qty || ""), unit: ["stems", "bunches", "blooms"].includes(s.unit) ? s.unit : "stems",
+            })),
+          })).map((p) => ({ ...p, stems: p.stems.length ? p.stems : [newStem()] }));
+
+          const matchIdx = base.findIndex((existing) => nrmKey(existing.name) === nrmKey(c.name));
+          if (matchIdx > -1) {
+            const existing = base[matchIdx];
+            const existingPieceKeys = new Set(existing.pieces.map((p) => nrmKey(p.name)));
+            const newPieces = cleanPieces.filter((p) => !existingPieceKeys.has(nrmKey(p.name)));
+            if (newPieces.length) {
+              const mergedPieces = [...existing.pieces, ...newPieces];
+              base[matchIdx] = { ...existing, pieces: mergedPieces.length ? mergedPieces : existing.pieces };
+            }
+          } else if (cleanPieces.length) {
+            base.push({ ...newCollection(c.name || "Untitled"), pieces: cleanPieces });
+          }
+        });
+        return reindex(base);
+      });
+    }
+
+    const goodHg = dedupeArr(d.hgExtras.filter((h) => h && (h.name || "").trim()), (h) => nrmKey(h.name));
+    if (goodHg.length) {
+      setHgExtras((prev) => {
+        const existingKeys = new Set(prev.map((h) => nrmKey(h.name)));
+        const added = goodHg.filter((h) => !existingKeys.has(nrmKey(h.name))).map((h) => ({ id: uid(), name: h.name || "", qty: String(h.qty || "") }));
+        return added.length ? [...prev, ...added] : prev;
+      });
+    }
+
+    const goodDays = d.days.filter((day) => day && (day.date || (Array.isArray(day.rows) && day.rows.length) || (Array.isArray(day.objectives) && day.objectives.length)));
+    goodDays.forEach((day) => {
+      const rowKey = (r) => nrmKey(`${r.time}|${r.location}|${r.task}|${r.staff}`);
+      const rows = dedupeArr((Array.isArray(day.rows) ? day.rows : []).filter((r) => r && (r.time || r.location || r.task || r.staff)), rowKey).map((r) => ({
+        id: uid(), time: r.time || "", location: r.location || "", task: r.task || "", staff: r.staff || "", groupLabel: r.groupLabel || "Staff",
+      }));
+      const objectives = dedupeArr((Array.isArray(day.objectives) ? day.objectives : []).filter((o) => (o || "").trim()), (o) => nrmKey(o));
+      let bucket = "pre";
+      if (day.date && info.event_date) bucket = day.date === info.event_date ? "event" : (day.date > info.event_date ? "post" : "pre");
+      else if (/event day/i.test(day.label || "")) bucket = "event";
+      else if (/post|dismantle|strike|sunday/i.test(day.label || "")) bucket = "post";
+
+      const mergeInto = (setter) => {
+        setter((prev) => {
+          const idx = day.date ? prev.findIndex((dc) => dc.date === day.date) : -1;
+          if (idx > -1) {
+            const updated = [...prev];
+            const existing = updated[idx];
+            const existingRows = existing.rows.length === 1 && !existing.rows[0].time && !existing.rows[0].task && !existing.rows[0].staff ? [] : existing.rows;
+            const existingRowKeys = new Set(existingRows.map(rowKey));
+            const newRows = rows.filter((r) => !existingRowKeys.has(rowKey(r)));
+            const mergedRows = [...existingRows, ...newRows];
+            updated[idx] = {
+              ...existing,
+              rows: mergedRows.length ? mergedRows : [newScheduleRow()],
+              objectives: [...(existing.objectives || []), ...objectives.filter((o) => !(existing.objectives || []).some((eo) => nrmKey(eo) === nrmKey(o)))],
+            };
+            return updated;
+          }
+          const blank = prev.length === 1 && !prev[0].date && prev[0].rows.length === 1 && !prev[0].rows[0].time && !prev[0].rows[0].task && !prev[0].rows[0].staff && !(prev[0].objectives || []).length;
+          const newCard = normalizeDayCard({ date: day.date || "", rows: rows.length ? rows : [newScheduleRow()], objectives });
+          return blank ? [newCard] : [...prev, newCard];
+        });
+      };
+      if (bucket === "event") mergeInto(setEventDay);
+      else if (bucket === "post") mergeInto(setPostEventDays);
+      else mergeInto(setPreEventDays);
+    });
+
+    setAiPreview(null);
+    setShowAiPreview(false);
+    setAiText("");
+    setSaveState("AI autofill applied — review the tabs to confirm");
+  };
+
+  const handleAutofillFile = async (file) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const pairs = parseAutofillPairs(text);
+      setAutofillPreview(buildAutofillPreview(pairs));
+      setShowAutofillConfirm(true);
+    } catch (e) { setSaveState("Couldn't read that file"); }
+  };
+  const toggleAutofillField = (idx) => {
+    setAutofillPreview((prev) => prev && ({ ...prev, infoFields: prev.infoFields.map((f, i) => (i === idx ? { ...f, included: !f.included } : f)) }));
+  };
+  const upsertRoleContact = (role, name, phone, email) => {
+    if (!phone && !email) return;
+    setContacts((prev) => {
+      const idx = prev.findIndex((c) => (c.role || "").toLowerCase() === role.toLowerCase());
+      if (idx > -1) {
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], name: name || updated[idx].name, phone: phone || updated[idx].phone, email: email || updated[idx].email, role: updated[idx].role || role, contactType: updated[idx].contactType || "vendor" };
+        return updated;
+      }
+      if (prev.length === 1 && !prev[0].name && !prev[0].phone && !prev[0].email) {
+        return [{ ...prev[0], name: name || "", phone: phone || "", email: email || "", role, contactType: "vendor" }];
+      }
+      return [...prev, { ...newContact(), name: name || "", phone: phone || "", email: email || "", role, contactType: "vendor" }];
+    });
+  };
+  const confirmAutofill = () => {
+    const preview = autofillPreview;
+    if (!preview) return;
+    setInfo((prev) => {
+      const next = { ...prev };
+      preview.infoFields.forEach((f) => {
+        if (!f.included) return;
+        next[f.key] = f.value;
+        if (f.key === "setup" && f.tbd) next.setup_tbd = true;
+        if (f.key === "takedown" && f.tbd) next.takedown_tbd = true;
+      });
+      return next;
+    });
+    const plannerField = preview.infoFields.find((f) => f.key === "planner_name" && f.included);
+    const designerField = preview.infoFields.find((f) => f.key === "designer_name" && f.included);
+    const plannerName = plannerField ? plannerField.value : info.planner_name;
+    const designerName = designerField ? designerField.value : info.designer_name;
+    if (preview.contactExtra.planner_phone || preview.contactExtra.planner_email) {
+      upsertRoleContact("Planner", plannerName, preview.contactExtra.planner_phone, preview.contactExtra.planner_email);
+    }
+    if (preview.contactExtra.designer_phone || preview.contactExtra.designer_email) {
+      upsertRoleContact("Lead Designer", designerName, preview.contactExtra.designer_phone, preview.contactExtra.designer_email);
+    }
+    setSaveState("Autofilled from file — not saved yet");
+    setShowAutofillConfirm(false);
+    setAutofillPreview(null);
+  };
+
+  const learn = (cat, val) => {
+    const v = (val || "").trim();
+    if (!v) return;
+    setLibrary((prev) => (prev[cat].some((x) => x.toLowerCase() === v.toLowerCase()) ? prev : { ...prev, [cat]: [...prev[cat], v] }));
+  };
+  const forget = (cat, val) => setLibrary((prev) => ({ ...prev, [cat]: prev[cat].filter((x) => x !== val) }));
+  const setInfoF = (k, v) => setInfo((p) => ({ ...p, [k]: v }));
+
+  const addContact = () => setContacts((p) => [...p, newContact()]);
+  const removeContact = (id) => setContacts((p) => p.filter((c) => c.id !== id));
+  const upContact = (id, k, v) => setContacts((p) => p.map((c) => (c.id === id ? { ...c, [k]: v } : c)));
+
+  const addVendor = () => setVendors((p) => [...p, newVendor()]);
+  const removeVendor = (id) => {
+    if (hasStorage() && currentEventId) {
+      const v = vendors.find((x) => x.id === id);
+      (v && v.invoices || []).forEach((inv) => queueWrite(() => lsDelete(`${INV_PREFIX}${currentEventId}:${id}:${inv.id}`)));
+    }
+    setVendors((p) => p.filter((v) => v.id !== id));
+  };
+  const upVendor = (id, k, v) => setVendors((p) => p.map((x) => (x.id === id ? { ...x, [k]: v } : x)));
+  const addInvoiceFile = async (vendorId, file) => {
+    if (!file || file.type !== "application/pdf") return;
+    let dataUrl;
+    try { dataUrl = await rawFileToDataURL(file); } catch (e) { return; }
+    const inv = { ...newInvoice(file.name.replace(/\.pdf$/i, ""), file.name), file: dataUrl };
+    setVendors((p) => p.map((v) => (v.id === vendorId ? { ...v, invoices: [...v.invoices, inv] } : v)));
+    if (hasStorage() && currentEventId) queueWrite(() => lsSet(`${INV_PREFIX}${currentEventId}:${vendorId}:${inv.id}`, dataUrl));
+  };
+  const removeInvoice = (vendorId, invoiceId) => {
+    setVendors((p) => p.map((v) => (v.id === vendorId ? { ...v, invoices: v.invoices.filter((i) => i.id !== invoiceId) } : v)));
+    if (hasStorage() && currentEventId) queueWrite(() => lsDelete(`${INV_PREFIX}${currentEventId}:${vendorId}:${invoiceId}`));
+  };
+  const upInvoiceName = (vendorId, invoiceId, name) => setVendors((p) => p.map((v) => (v.id === vendorId ? { ...v, invoices: v.invoices.map((i) => (i.id === invoiceId ? { ...i, name } : i)) } : v)));
+
+  const addCollection = (name) => { const n = name.trim(); if (!n) return; setCollections((p) => reindex([...p, newCollection(n)])); learn("collections", n); setNewColName(""); };
+  const removeCollection = (id) => setCollections((p) => (p.length > 1 ? p.filter((c) => c.id !== id) : p));
+  const upColName = (id, name) => setCollections((p) => p.map((c) => (c.id === id ? { ...c, name } : c)));
+  const addPiece = (cid) => setCollections((p) => p.map((c) => (c.id === cid ? { ...c, pieces: [...c.pieces, newPiece()] } : c)));
+  const removePiece = (cid, pid) => {
+    if (hasStorage() && currentEventId) queueWrite(() => lsDelete(`${IMG_PREFIX}${currentEventId}:${pid}`));
+    setCollections((p) => p.map((c) => (c.id === cid ? { ...c, pieces: c.pieces.length > 1 ? c.pieces.filter((pc) => pc.id !== pid) : c.pieces } : c)));
+  };
+  const upPiece = (cid, pid, k, v) => setCollections((p) => p.map((c) => (c.id === cid ? { ...c, pieces: c.pieces.map((pc) => (pc.id === pid ? { ...pc, [k]: v } : pc)) } : c)));
+  const setPieceImage = (cid, pid, dataURL) => {
+    upPiece(cid, pid, "image", dataURL);
+    if (!hasStorage() || !currentEventId) return;
+    if (dataURL) queueWrite(() => lsSet(`${IMG_PREFIX}${currentEventId}:${pid}`, dataURL));
+    else queueWrite(() => lsDelete(`${IMG_PREFIX}${currentEventId}:${pid}`));
+  };
+  function upPieceFn(cid, pid, fn) { setCollections((p) => p.map((c) => (c.id === cid ? { ...c, pieces: c.pieces.map((pc) => (pc.id === pid ? fn(pc) : pc)) } : c))); }
+  const addStem = (cid, pid) => upPieceFn(cid, pid, (pc) => ({ ...pc, stems: [...pc.stems, newStem()] }));
+  const removeStem = (cid, pid, sid) => upPieceFn(cid, pid, (pc) => ({ ...pc, stems: pc.stems.length > 1 ? pc.stems.filter((s) => s.id !== sid) : pc.stems }));
+  const upStem = (cid, pid, sid, k, v) => upPieceFn(cid, pid, (pc) => ({ ...pc, stems: pc.stems.map((s) => (s.id === sid ? { ...s, [k]: v } : s)) }));
+  const addComp = (cid, pid) => upPieceFn(cid, pid, (pc) => ({ ...pc, components: [...pc.components, newComponent()] }));
+  const removeComp = (cid, pid, kid) => upPieceFn(cid, pid, (pc) => ({ ...pc, components: pc.components.filter((k) => k.id !== kid) }));
+  const upComp = (cid, pid, kid, k, v) => upPieceFn(cid, pid, (pc) => ({ ...pc, components: pc.components.map((kk) => (kk.id === kid ? { ...kk, [k]: v } : kk)) }));
+  const setHasComponents = (cid, pid, v) => upPieceFn(cid, pid, (pc) => ({ ...pc, hasComponents: v }));
+
+  const addHgExtra = () => { const n = newHg.name.trim(); if (!n) return; setHgExtras((p) => [...p, { id: uid(), name: n, qty: newHg.qty.trim() }]); setNewHg({ name: "", qty: "" }); };
+  const removeHgExtra = (id) => setHgExtras((p) => p.filter((x) => x.id !== id));
+
+  const addDayTo = (setter) => setter((p) => [...p, newDayCard()]);
+  const removeDayFrom = (setter, id) => setter((p) => (p.length > 1 ? p.filter((d) => d.id !== id) : p));
+  const upDayField = (setter, id, k, v) => setter((p) => p.map((d) => (d.id === id ? { ...d, [k]: v } : d)));
+  const addRowTo = (setter, id) => setter((p) => p.map((d) => (d.id === id ? { ...d, rows: [...d.rows, newScheduleRow()] } : d)));
+  const removeRowFrom = (setter, id, rid) => setter((p) => p.map((d) => (d.id === id ? { ...d, rows: d.rows.length > 1 ? d.rows.filter((r) => r.id !== rid) : d.rows } : d)));
+  const upRowIn = (setter, id, rid, k, v) => setter((p) => p.map((d) => (d.id === id ? { ...d, rows: d.rows.map((r) => (r.id === rid ? { ...r, [k]: v } : r)) } : d)));
+  const toggleBlockIn = (setter, id, blockKey) => setter((p) => p.map((d) => (d.id === id ? { ...d, [blockKey]: d[blockKey] ? null : { location: "", staff: "", items: "" } } : d)));
+  const upBlockFieldIn = (setter, id, blockKey, field, v) => setter((p) => p.map((d) => (d.id === id ? { ...d, [blockKey]: { ...d[blockKey], [field]: v } } : d)));
+  const addObjectiveTo = (setter, id) => setter((p) => p.map((d) => (d.id === id ? { ...d, objectives: [...(d.objectives || []), ""] } : d)));
+  const removeObjectiveFrom = (setter, id, oi) => setter((p) => p.map((d) => (d.id === id ? { ...d, objectives: (d.objectives || []).filter((_, i) => i !== oi) } : d)));
+  const upObjectiveIn = (setter, id, oi, v) => setter((p) => p.map((d) => (d.id === id ? { ...d, objectives: (d.objectives || []).map((o, i) => (i === oi ? v : o)) } : d)));
+  const addFloorplan = () => setFloorplans((p) => [...p, newFloorplan()]);
+  const removeFloorplan = (id) => setFloorplans((p) => (p.length > 1 ? p.filter((f) => f.id !== id) : p));
+  const upFloorplan = (id, v) => setFloorplans((p) => p.map((f) => (f.id === id ? { ...f, label: v } : f)));
+
+  const inLoad = (label, src) => finalLoad.some((x) => x.label === label && x.src === src);
+  const addToLoad = (label, qty, src) => { if (!label.trim() || inLoad(label, src)) return; setFinalLoad((p) => [...p, { id: uid(), label, qty, src, done: false }]); };
+  const toggleLoad = (id) => setFinalLoad((p) => p.map((x) => (x.id === id ? { ...x, done: !x.done } : x)));
+  const removeLoad = (id) => setFinalLoad((p) => p.filter((x) => x.id !== id));
+  const addCustomLoad = () => { const n = newLoad.name.trim(); if (!n) return; addToLoad(n, newLoad.qty.trim(), "Custom"); setNewLoad({ name: "", qty: "" }); };
+
+  const derived = useMemo(() => {
+    const totals = {}, mathParts = {}, flags = [];
+    let gIdxN = 0;
+    const built = collections.map((col) => ({
+      ...col,
+      pieces: col.pieces.map((piece) => {
+        gIdxN++;
+        const gi = pad2(gIdxN);
+        const qty = parseInt(piece.qty) || 1;
+        const mode = piece.pullMode === "total" ? "total" : "per";
+        const pulls = piece.stems.filter((s) => s.name.trim()).map((s) => {
+          const v = parseFrac(s.qty);
+          if (v == null) { flags.push(`"${s.name}" in ${piece.name || "Unnamed"} #${gi} needs a quantity`); return { name: s.name, unit: s.unit, each: null, total: null }; }
+          const total = mode === "total" ? v : v * qty;
+          const each = mode === "total" ? (qty > 0 ? total / qty : v) : v;
+          const key = `${s.name.trim()}||${s.unit}`;
+          totals[key] = (totals[key] || 0) + total;
+          (mathParts[key] = mathParts[key] || []).push({ label: piece.name || "Unnamed", gIdx: gi, each, qty, mode, total });
+          return { name: s.name, unit: s.unit, each, total };
+        });
+        const comps = piece.hasComponents === "yes" ? piece.components.filter((k) => k.name.trim()) : [];
+        return { ...piece, qty, mode, pulls, comps, gIdx: gi };
+      }),
+    }));
+    const hgGroups = built
+      .map((col) => ({ name: col.name || "Unnamed", items: col.pieces.flatMap((p) => p.comps.map((k) => ({ item: k.name, qty: k.qty, src: p.name || "Unnamed" }))) }))
+      .filter((g) => g.items.length > 0);
+    return { built, totals, mathParts, flags, hgGroups };
+  }, [collections]);
+
+  const PDF_TITLES = { all: "Full Production Sheet", production: "Production", master: "Fresh", order: "Order Form", hardgoods: "Hard Goods", load: "Load List", contacts: "Team Sheet", schedule: "Event Timeline", vendors: "Vendor Contacts" };
+  const exportPdf = (scope) => { setPdfScope(scope); try { window.scrollTo(0, 0); } catch (e) {} };
+  const safeFile = (s) => (s || "").replace(/[\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
+  function openHtmlInNewTab(html) {
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.target = "_blank"; a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) {} }, 30000);
+  }
+  const doPrint = () => {
+    try {
+      const node = pdRef.current;
+      if (!node) throw new Error("no node");
+      const title = PDF_TITLES[pdfScope] || "Production Sheet";
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${title}</title><style>${css}</style></head><body><div class="pd">${node.innerHTML}</div><script>window.onload=function(){setTimeout(function(){window.print();},200);};<\/script></body></html>`;
+      openHtmlInNewTab(html);
+    } catch (e) {
+      try { window.print(); } catch (e2) {}
+    }
+  };
+  const doExportPdf = () => {
+    try {
+      const node = pdRef.current;
+      if (!node) throw new Error("no node");
+      const title = PDF_TITLES[pdfScope] || "Production Sheet";
+      const filename = `${safeFile(info.client) || "Event"} - ${title}.pdf`;
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${title}</title><style>${css}</style></head><body>
+<div class="pd" id="pdfRoot">${node.innerHTML}</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+<script>
+window.onload = function () {
+  setTimeout(function () {
+    var el = document.getElementById("pdfRoot");
+    if (window.html2pdf) {
+      html2pdf().set({
+        margin: 24,
+        filename: ${JSON.stringify(filename)},
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "pt", format: "letter", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] }
+      }).from(el).toPdf().get("pdf").then(function (pdf) {
+        var blob = pdf.output("blob");
+        var url = URL.createObjectURL(blob);
+        window.location.href = url;
+      }).catch(function () { window.print(); });
+    } else {
+      window.print();
+    }
+  }, 300);
+};
+<\/script>
+</body></html>`;
+      openHtmlInNewTab(html);
+      try { window.open("https://drive.google.com/drive/my-drive", "_blank", "noopener"); } catch (e) {}
+    } catch (e) {
+      try { window.print(); } catch (e2) {}
+    }
+  };
+
+  const exportVendorInvoicesPdf = async () => {
+    setVendorPdfLoading(true); setVendorPdfError("");
+    try {
+      if (!window.PDFLib) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+      const outDoc = await PDFDocument.create();
+      const font = await outDoc.embedFont(StandardFonts.Helvetica);
+      const fontBold = await outDoc.embedFont(StandardFonts.HelveticaBold);
+      const PAGE_W = 612, PAGE_H = 792, MARGIN = 54;
+      let page = outDoc.addPage([PAGE_W, PAGE_H]);
+      let y = PAGE_H - MARGIN;
+      const newPage = () => { page = outDoc.addPage([PAGE_W, PAGE_H]); y = PAGE_H - MARGIN; };
+      const ensureRoom = (needed) => { if (y - needed < MARGIN) newPage(); };
+      const drawLine = (text, opts = {}) => {
+        const size = opts.size || 11;
+        const useFont = opts.bold ? fontBold : font;
+        ensureRoom(size + (opts.gap || 6));
+        page.drawText(text || "", { x: MARGIN, y, size, font: useFont, color: rgb(0, 0, 0) });
+        y -= size + (opts.gap || 6);
+      };
+
+      drawLine(`${info.client || "Event"} — Vendor Contacts`, { size: 20, bold: true, gap: 4 });
+      drawLine(info.venue || "", { size: 12, gap: 18 });
+
+      const list = vendors.filter((v) => (v.name || "").trim());
+      if (list.length === 0) {
+        drawLine("No vendors added yet.", { size: 12 });
+      }
+      list.forEach((v, i) => {
+        ensureRoom(70);
+        drawLine(`${i + 1}. ${v.name}${v.category ? "  —  " + v.category : ""}`, { size: 14, bold: true, gap: 4 });
+        if (v.contactName) drawLine(`Contact: ${v.contactName}`, { size: 11 });
+        const contactBits = [v.phone, v.email].filter(Boolean).join("   ·   ");
+        if (contactBits) drawLine(contactBits, { size: 11 });
+        if (v.notes) drawLine(v.notes, { size: 10, gap: 4 });
+        const invCount = (v.invoices || []).filter((inv) => inv.file).length;
+        if (invCount) drawLine(`${invCount} invoice${invCount === 1 ? "" : "s"} attached — see following page${invCount === 1 ? "" : "s"}`, { size: 10, gap: 4 });
+        y -= 10;
+      });
+
+      for (const v of list) {
+        for (const inv of v.invoices || []) {
+          if (!inv.file) continue;
+          newPage();
+          drawLine(`${v.name} — ${inv.name || inv.fileName || "Invoice"}`, { size: 13, bold: true, gap: 16 });
+          try {
+            const base64 = inv.file.split(",")[1] || "";
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const srcDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+            const copied = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+            copied.forEach((p) => outDoc.addPage(p));
+          } catch (e) {
+            drawLine("Couldn't embed this file — it may be corrupted or password protected.", { size: 11 });
+          }
+        }
+      }
+
+      const bytes = await outDoc.save();
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${safeFile(info.client || "Event")} - Vendor Contacts.pdf`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) {} }, 30000);
+    } catch (e) {
+      setVendorPdfError("Couldn't build the PDF. Check your connection and try again.");
+    } finally {
+      setVendorPdfLoading(false);
+    }
+  };
+
+  const renderQuickLinks = () => (
+    <div>
+      <div className="sh">Event Production</div>
+      <div className="sd">Production management for Erin McDonald Co.</div>
+      {eventsLoading ? (
+        <div className="card" style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--label-2)", fontSize: 14 }}>
+          <span className="spinner" /> Loading your events…
+        </div>
+      ) : (
+        <>
+          <div className="section-lbl" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>Your Events</span>
+            <button className="btn-add" onClick={addNewEvent}>＋ New Event</button>
+          </div>
+          <div className="ql-list">
+            {events.length === 0 && <div style={{ padding: "15px 0", fontSize: 13, color: "var(--label-3)", fontStyle: "italic" }}>No events yet.</div>}
+            {events.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).map((ev) => (
+              <button className="ql-item" key={ev.id} onClick={() => requestSwitchEvent(ev.id)} style={ev.id === currentEventId ? { color: "var(--walnut)" } : undefined}>
+                <span>
+                  {ev.status === "pending" ? "Loading…" : (ev.label || "Untitled Event")}
+                  {ev.id === currentEventId ? <span className="badge badge-blue" style={{ marginLeft: 8, fontSize: 9, padding: "2px 6px" }}>CURRENT</span> : null}
+                  {ev.id === currentEventId && isDirty ? <span className="badge" style={{ marginLeft: 6, fontSize: 9, padding: "2px 6px", background: "var(--orange)" }}>UNSAVED</span> : null}
+                  {ev.status === "unsaved" && ev.id !== currentEventId ? <span className="badge" style={{ marginLeft: 6, fontSize: 9, padding: "2px 6px", background: "var(--orange)" }}>UNSAVED</span> : null}
+                  <div className="ql-sub">{ev.status === "pending" ? "Fetching details…" : (ev.eventDate || "No date set")}</div>
+                </span>
+                <span className="ql-chev">{ev.id === currentEventId ? "✓" : "›"}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      <div className="section-lbl">AI Autofill</div>
+      <div className="card">
+        <p style={{ fontSize: 12, color: "var(--g4)", lineHeight: 1.6, marginBottom: 12 }}>
+          Paste raw notes — client details, a floral recipe, a timeline, vendor info, whatever you've got — and Claude will sort it into the right tabs. Nothing gets overwritten and duplicates are skipped automatically — it only adds contacts, vendors, pieces, and rows that aren't already there, and only fills blank Event fields. Review before saving.
+        </p>
+        <textarea className="ftextarea" style={{ minHeight: 120 }} value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder={'Paste notes here, e.g.\n"Baylee & Tommy, Sterling at Arrowhead, July 4 2026. Ceremony: 2 pieces, 20 playa roses each, 20 white hydrangea each..."'} />
+        {aiError && <div style={{ fontSize: 12, color: "var(--red, #b3261e)", marginTop: 8 }}>{aiError}</div>}
+        <button className="btn btn-ink" style={{ marginTop: 10 }} disabled={!aiText.trim() || aiLoading} onClick={runAiAutofill}>
+          {aiLoading ? "Reading your notes…" : "Parse with AI"}
+        </button>
+      </div>
+
+      <div className="section-lbl">Input</div>
+      <div className="ql-list">
+        {[["Event", "Client, date & venue", 1], ["Contacts", "Staff, venue & day-of contacts", 2], ["Vendors", "Vendor list & invoice PDFs", 11], ["Build", "Arrangements & stem recipes", 3]].map(([t, s, i]) => (
+          <button className="ql-item" key={t} onClick={() => setPage(i)}>
+            <span>{t}<div className="ql-sub">{s}</div></span><span className="ql-chev">›</span>
+          </button>
+        ))}
+      </div>
+      <div className="section-lbl">Review &amp; Export</div>
+      <div className="ql-list">
+        {[["Production", "All arrangements with full stem recipes", 4], ["Fresh & Order", "Master totals plus wholesale ordering", 5], ["Hard Goods", "Vessels, mechanics & hard goods checklist", 6], ["Logistics", "What goes in the van", 7], ["Team Sheet", "Printable day-of contact sheet", 8], ["Event Timeline", "Day-by-day timing & load-in/out", 9], ["Library", "Saved names for autofill", 10]].map(([t, s, i]) => (
+          <button className="ql-item" key={t} onClick={() => setPage(i)}>
+            <span>{t}<div className="ql-sub">{s}</div></span><span className="ql-chev">›</span>
+          </button>
+        ))}
+      </div>
+      <div className="section-lbl">Backup</div>
+      <div className="card">
+        <p style={{ fontSize: 12, color: "var(--g4)", lineHeight: 1.6, marginBottom: 14 }}>
+          Download a local copy of this event — independent of browser storage. Restore it anytime.
+        </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn-grey btn-sm" onClick={doDownloadBackup}>Download</button>
+          <button className="btn btn-grey btn-sm" onClick={() => backupFileRef.current && backupFileRef.current.click()}>Restore From File</button>
+          <input ref={backupFileRef} type="file" accept="application/json,.json" style={{ display: "none" }} onChange={(e) => onRestoreFileChosen(e.target.files && e.target.files[0])} />
+        </div>
+      </div>
+      <div className="section-lbl">Danger Zone</div>
+      <div className="card">
+        <p style={{ fontSize: 12, color: "var(--g4)", lineHeight: 1.6, marginBottom: 14 }}>
+          {info.client ? `Currently open: ${info.client}${info.event_date ? " · " + info.event_date : ""}.` : "No event details yet — start on the Event tab."}
+        </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn-red btn-sm" onClick={() => setShowReset(true)}>Delete this event</button>
+          <button className="btn btn-red btn-sm" onClick={() => setShowResetAll(true)}>Reset all data</button>
+        </div>
+      </div>
+      <div className="export-row">
+        <button className="btn btn-ink" onClick={() => exportPdf("all")}>Export Full Production PDF</button>
+      </div>
+    </div>
+  );
+
+  const renderEventInfo = () => (
+    <div>
+      <div className="sh">Event</div>
+      <div className="sd">Core event details. Blank fields print as [TBC] on the production sheet.</div>
+      <div
+        className={`dz ${autofillDrag ? "over" : ""}`}
+        style={{ minHeight: 84 }}
+        onClick={() => autofillFileRef.current && autofillFileRef.current.click()}
+        onDragOver={(e) => { e.preventDefault(); setAutofillDrag(true); }}
+        onDragLeave={() => setAutofillDrag(false)}
+        onDrop={(e) => {
+          e.preventDefault(); setAutofillDrag(false);
+          const f = e.dataTransfer.files && e.dataTransfer.files[0];
+          if (f) handleAutofillFile(f);
+        }}
+      >
+        <span>⇩ Drag a .csv or .txt file here to autofill — or tap to browse</span>
+        <span style={{ fontSize: 8, opacity: 0.75 }}>Reads rows like "Venue, The Sycamore Room" or a header row + one data row</span>
+      </div>
+      <input ref={autofillFileRef} type="file" accept=".csv,.txt,text/csv,text/plain" style={{ display: "none" }} onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleAutofillFile(f); e.target.value = ""; }} />
+      <div className="card">
+        <div className="grid g2" style={{ marginBottom: 14 }}>
+          <Field label="Client"><AutoInput className="finput" suggestions={library.clients} value={info.client} onChange={(v) => setInfoF("client", v)} onBlur={() => learn("clients", info.client)} placeholder="The Hartley Wedding" /></Field>
+          <Field label="Event Date"><input className="finput" type="date" value={info.event_date} onChange={(e) => setInfoF("event_date", e.target.value)} /></Field>
+        </div>
+        <div className="grid g2" style={{ marginBottom: 8 }}>
+          <Field label="Event Planner"><input className="finput" value={info.planner_name} onChange={(e) => setInfoF("planner_name", e.target.value)} placeholder="Jane Doe" /></Field>
+          <Field label="Lead Designer">
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="finput" style={{ flex: 1 }} value={info.designer_name} onChange={(e) => setInfoF("designer_name", e.target.value)} placeholder="Erin McDonald" />
+              <button type="button" className="btn btn-grey btn-sm" style={{ flexShrink: 0 }} onClick={() => setInfoF("designer_name", info.planner_name)}>Same</button>
+            </div>
+          </Field>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14, padding: "10px 0" }}>
+          <span style={{ fontSize: 11, color: "var(--g4)", flex: 1, minWidth: 160 }}>{defaultsStatus}</span>
+          <button type="button" className="btn btn-grey btn-xs" onClick={saveAsDefaults}>Save as Default</button>
+          <button type="button" className="btn btn-line btn-xs" onClick={loadDefaultsIntoCurrent} disabled={!defaults} style={!defaults ? { opacity: 0.4 } : undefined}>Load Defaults</button>
+        </div>
+        <div className="grid g2" style={{ marginBottom: 14 }}>
+          <Field label="Venue"><AutoInput className="finput" suggestions={library.venues} value={info.venue} onChange={(v) => setInfoF("venue", v)} onBlur={() => learn("venues", info.venue)} placeholder="The Sycamore Room" /></Field>
+          <Field label="Street Address"><input className="finput" value={info.venue_address} onChange={(e) => setInfoF("venue_address", e.target.value)} /></Field>
+        </div>
+        <div className="grid g3" style={{ marginBottom: 14 }}>
+          <Field label="City"><input className="finput" value={info.venue_city} onChange={(e) => setInfoF("venue_city", e.target.value)} /></Field>
+          <Field label="State"><select className="fselect" value={info.venue_state} onChange={(e) => setInfoF("venue_state", e.target.value)}><option value="">—</option>{US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}</select></Field>
+          <Field label="ZIP"><input className="finput" value={info.venue_zip} onChange={(e) => setInfoF("venue_zip", e.target.value)} /></Field>
+        </div>
+        <div className="grid g2">
+          <Field label="Setup Time">
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input className="finput" style={{ flex: 1, opacity: info.setup_tbd ? 0.4 : 1 }} type="datetime-local" disabled={info.setup_tbd} value={info.setup} onChange={(e) => setInfoF("setup", e.target.value)} />
+              <button type="button" className={`btn btn-sm ${info.setup_tbd ? "btn-ink" : "btn-grey"}`} style={{ flexShrink: 0 }} onClick={() => setInfoF("setup_tbd", !info.setup_tbd)}>TBD</button>
+            </div>
+          </Field>
+          <Field label="Strike Time">
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input className="finput" style={{ flex: 1, opacity: info.takedown_tbd ? 0.4 : 1 }} type="datetime-local" disabled={info.takedown_tbd} value={info.takedown} onChange={(e) => setInfoF("takedown", e.target.value)} />
+              <button type="button" className={`btn btn-sm ${info.takedown_tbd ? "btn-ink" : "btn-grey"}`} style={{ flexShrink: 0 }} onClick={() => setInfoF("takedown_tbd", !info.takedown_tbd)}>TBD</button>
+            </div>
+          </Field>
+        </div>
+      </div>
+
+      <div className="section-lbl">Second Venue <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "var(--g4)" }}>— optional</span></div>
+      <div className="card">
+        <div style={{ fontSize: 12, color: "var(--g4)", marginBottom: 16 }}>Leave blank to omit from the production PDF.</div>
+        <div className="grid g2" style={{ marginBottom: 14 }}>
+          <Field label="Venue"><AutoInput className="finput" suggestions={library.venues} value={info.venue2} onChange={(v) => setInfoF("venue2", v)} onBlur={() => learn("venues", info.venue2)} placeholder="The Carriage House" /></Field>
+          <Field label="Street Address"><input className="finput" value={info.venue2_address} onChange={(e) => setInfoF("venue2_address", e.target.value)} /></Field>
+        </div>
+        <div className="grid g3">
+          <Field label="City"><input className="finput" value={info.venue2_city} onChange={(e) => setInfoF("venue2_city", e.target.value)} /></Field>
+          <Field label="State"><select className="fselect" value={info.venue2_state} onChange={(e) => setInfoF("venue2_state", e.target.value)}><option value="">—</option>{US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}</select></Field>
+          <Field label="ZIP"><input className="finput" value={info.venue2_zip} onChange={(e) => setInfoF("venue2_zip", e.target.value)} /></Field>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderContacts = () => (
+    <div>
+      <div className="sh">Contacts</div>
+      <div className="sd">Everyone the team may need to reach — vendors, staff, venue.</div>
+      {contacts.map((c, idx) => {
+        const isStaff = c.contactType === "staff", isVendor = c.contactType === "vendor", isVenue = c.contactType === "venue";
+        return (
+          <div className="card" key={c.id}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span className="badge">{pad2(idx + 1)}</span>
+                {isStaff && <span className="contact-type-badge staff">Staff</span>}
+                {isVendor && <span className="contact-type-badge vendor">Vendor</span>}
+                {isVenue && <span className="contact-type-badge venue">Venue</span>}
+                <span style={{ fontFamily: "var(--serif)", fontSize: 20, fontWeight: 400 }}>{c.name.trim() || "Unnamed"}</span>
+                {c.includeInPdf === false && <span className="badge" style={{ background: "var(--muted-fg)", fontSize: 9, padding: "2px 6px" }}>Hidden from PDF</span>}
+              </div>
+              {contacts.length > 1 && <button className="btn btn-red btn-xs" onClick={() => removeContact(c.id)}>Remove</button>}
+            </div>
+            <div className="grid g2" style={{ marginBottom: 13 }}>
+              <Field label="Name"><AutoInput className="finput" suggestions={library.contacts} value={c.name} onChange={(v) => upContact(c.id, "name", v)} onBlur={() => learn("contacts", c.name)} /></Field>
+              <Field label="Type"><SegOpts value={c.contactType || ""} onChange={(v) => upContact(c.id, "contactType", v)} options={[["staff", "Staff"], ["vendor", "Vendor"], ["venue", "Venue"]]} /></Field>
+            </div>
+            {(isVendor || isVenue) && (
+              <div className="grid" style={{ marginBottom: 13 }}>
+                <Field label={isVenue ? "Venue Name" : "Business / Company"}><AutoInput className="finput" suggestions={isVenue ? library.venues : library.businesses} value={c.businessName} onChange={(v) => upContact(c.id, "businessName", v)} onBlur={() => learn(isVenue ? "venues" : "businesses", c.businessName)} /></Field>
+              </div>
+            )}
+            <div className="grid" style={{ marginBottom: 13 }}>
+              <Field label={isStaff ? "Event Role" : "Contact for"}><AutoInput className="finput" suggestions={library.roles} value={c.role} onChange={(v) => upContact(c.id, "role", v)} onBlur={() => learn("roles", c.role)} /></Field>
+            </div>
+            <div className="grid g2" style={{ marginBottom: 13 }}>
+              <Field label="Phone"><input className="finput" type="tel" value={c.phone} onChange={(e) => upContact(c.id, "phone", e.target.value)} /></Field>
+              <Field label="Email"><input className="finput" type="email" value={c.email} onChange={(e) => upContact(c.id, "email", e.target.value)} /></Field>
+            </div>
+            <Field label="Notes"><textarea className="ftextarea" value={c.notes} onChange={(e) => upContact(c.id, "notes", e.target.value)} /></Field>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border-light)" }}>
+              <span style={{ fontSize: 12, color: "var(--g4)" }}>{c.includeInPdf !== false ? "Included on printed contact sheets" : "Hidden from printed contact sheets"}</span>
+              <button type="button" className={`btn btn-sm ${c.includeInPdf !== false ? "btn-grey" : "btn-ink"}`} onClick={() => upContact(c.id, "includeInPdf", c.includeInPdf === false)}>
+                {c.includeInPdf !== false ? "Remove from PDF" : "Include in PDF"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+      <button className="btn btn-dashed" onClick={addContact} style={{ marginTop: 4 }}>＋ Add contact</button>
+    </div>
+  );
+
+  const renderVendors = () => (
+    <div>
+      <div className="sh">Vendors</div>
+      <div className="sd">Businesses supplying rentals, linens, décor &amp; more — separate from day-of Contacts. Attach invoice PDFs to each.</div>
+      {vendors.length === 0 && <div className="card" style={{ fontSize: 14, fontStyle: "italic", color: "var(--label-2)" }}>No vendors yet.</div>}
+      {vendors.map((v, idx) => (
+        <div className="card" key={v.id}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span className="badge">{pad2(idx + 1)}</span>
+              <span style={{ fontFamily: "var(--serif)", fontSize: 20, fontWeight: 400 }}>{v.name.trim() || "Unnamed vendor"}</span>
+            </div>
+            <button className="btn btn-red btn-xs" onClick={() => removeVendor(v.id)}>Remove</button>
+          </div>
+          <div className="grid g2" style={{ marginBottom: 13 }}>
+            <Field label="Vendor / Business Name"><AutoInput className="finput" suggestions={library.businesses} value={v.name} onChange={(val) => upVendor(v.id, "name", val)} onBlur={() => learn("businesses", v.name)} /></Field>
+            <Field label="Category"><input className="finput" value={v.category} onChange={(e) => upVendor(v.id, "category", e.target.value)} placeholder="Rentals, Linens, Catering…" /></Field>
+          </div>
+          <div className="grid g2" style={{ marginBottom: 13 }}>
+            <Field label="Contact Person"><input className="finput" value={v.contactName} onChange={(e) => upVendor(v.id, "contactName", e.target.value)} /></Field>
+            <Field label="Phone"><input className="finput" type="tel" value={v.phone} onChange={(e) => upVendor(v.id, "phone", e.target.value)} /></Field>
+          </div>
+          <div className="grid g2" style={{ marginBottom: 13 }}>
+            <Field label="Email"><input className="finput" type="email" value={v.email} onChange={(e) => upVendor(v.id, "email", e.target.value)} /></Field>
+          </div>
+          <Field label="Notes"><textarea className="ftextarea" value={v.notes} onChange={(e) => upVendor(v.id, "notes", e.target.value)} /></Field>
+
+          <div className="recipe-lbl" style={{ marginTop: 18 }}><span>Invoices</span></div>
+          {v.invoices.length === 0 && <div style={{ fontSize: 13, fontStyle: "italic", color: "var(--label-2)", marginBottom: 10 }}>No invoices uploaded yet.</div>}
+          {v.invoices.map((inv) => (
+            <div className="ck" key={inv.id} style={{ gap: 10 }}>
+              <input className="minput ck-grow" value={inv.name} onChange={(e) => upInvoiceName(v.id, inv.id, e.target.value)} placeholder="Invoice label" />
+              {inv.file && <a className="btn btn-grey btn-xs" href={inv.file} download={inv.fileName || `${inv.name || "invoice"}.pdf`} target="_blank" rel="noreferrer">View PDF</a>}
+              <button className="btn-x" onClick={() => removeInvoice(v.id, inv.id)}>✕</button>
+            </div>
+          ))}
+          <div style={{ marginTop: 10 }}>
+            <PdfFileInput label="Upload invoice PDF" onFile={(f) => addInvoiceFile(v.id, f)} />
+          </div>
+        </div>
+      ))}
+      <button className="btn btn-dashed" onClick={addVendor} style={{ marginTop: 4 }}>＋ Add vendor</button>
+      {vendors.length > 0 && (
+        <div className="export-row">
+          <button className="btn btn-ink" disabled={vendorPdfLoading} onClick={exportVendorInvoicesPdf}>
+            {vendorPdfLoading ? "Building PDF…" : "Vendor Contacts PDF"}
+          </button>
+        </div>
+      )}
+      {vendorPdfError && <div style={{ fontSize: 12, color: "var(--red, #b3261e)", marginTop: 8 }}>{vendorPdfError}</div>}
+      <p style={{ fontSize: 11, color: "var(--label-2)", marginTop: 10, lineHeight: 1.6 }}>
+        The PDF opens with a vendor contact list first, then every attached invoice — each one starting on its own page, in order.
+      </p>
+    </div>
+  );
+
+  const renderBuild = () => {
+    let globalCount = 0;
+    return (
+      <div>
+        <div className="sh">Build</div>
+        <div className="sd">Collections, arrangement names, stem recipes. Totals calculate automatically.</div>
+        <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
+          <AutoInput className="finput" suggestions={library.collections} value={newColName} onChange={setNewColName} placeholder="New collection name (e.g. Centerpieces)" />
+          <button className="btn btn-ink" onClick={() => addCollection(newColName)}>＋ Add</button>
+        </div>
+        {collections.map((col) => (
+          <div className="col-card" key={col.id}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+              <AutoInput className="finput" suggestions={library.collections} value={col.name} onChange={(v) => upColName(col.id, v)} onBlur={() => learn("collections", col.name)} placeholder="Collection name" />
+              {collections.length > 1 && <button className="btn btn-red btn-xs" onClick={() => removeCollection(col.id)}>Remove</button>}
+            </div>
+            {col.pieces.map((piece) => {
+              globalCount++;
+              const pNum = pad2(globalCount);
+              return (
+                <div className="piece" key={piece.id}>
+                  <div className="piece-head">
+                    <span className="badge badge-blue" style={{ fontSize: 10, padding: "3px 8px" }}>{pNum}</span>
+                    <input className="minput" style={{ flex: 1, minWidth: 160, fontWeight: 600, fontSize: 15 }} placeholder="Arrangement name" value={piece.name} onChange={(e) => upPiece(col.id, piece.id, "name", e.target.value)} />
+                    <input className="minput" style={{ width: 64, textAlign: "center" }} placeholder="Item #" value={piece.itemNumber || ""} onChange={(e) => upPiece(col.id, piece.id, "itemNumber", e.target.value)} />
+                    <input className="minput" type="number" min="1" style={{ width: 58, textAlign: "center" }} value={piece.qty} onChange={(e) => upPiece(col.id, piece.id, "qty", e.target.value)} />
+                    <button className="btn-x" disabled={col.pieces.length === 1} onClick={() => removePiece(col.id, piece.id)}>✕</button>
+                  </div>
+                  <div className="pull-row">
+                    <SegOpts value={piece.pullMode === "total" ? "total" : "per"} onChange={(v) => upPiece(col.id, piece.id, "pullMode", v)} options={[["per", "Per piece"], ["total", "Total pull"]]} />
+                    <span className="pull-note">{piece.pullMode === "total" ? `Covers all ${parseInt(piece.qty) || 1} together` : `× ${parseInt(piece.qty) || 1} pieces`}</span>
+                  </div>
+                  <Dropzone image={piece.image} onImage={(img) => setPieceImage(col.id, piece.id, img)} onRemove={() => setPieceImage(col.id, piece.id, null)} />
+                  <div className="recipe-lbl"><span>Fresh</span></div>
+                  {piece.stems.map((s) => (
+                    <div className="stem-row" key={s.id}>
+                      <AutoInput className="minput" suggestions={library.flowers} value={s.name} onChange={(v) => upStem(col.id, piece.id, s.id, "name", v)} onBlur={() => learn("flowers", s.name)} placeholder="Garden rose" />
+                      <input className="minput" value={s.qty} onChange={(e) => upStem(col.id, piece.id, s.id, "qty", e.target.value)} placeholder="qty" />
+                      <select className="minput" value={s.unit} onChange={(e) => upStem(col.id, piece.id, s.id, "unit", e.target.value)}>
+                        <option value="stems">stems</option><option value="bunches">bunches</option><option value="blooms">blooms</option>
+                      </select>
+                      <button className="btn-x" disabled={piece.stems.length === 1} onClick={() => removeStem(col.id, piece.id, s.id)}>✕</button>
+                    </div>
+                  ))}
+                  <button className="btn btn-grey btn-xs" style={{ marginBottom: 4 }} onClick={() => addStem(col.id, piece.id)}>＋ Add floral</button>
+                  <div className="recipe-lbl"><span>Hard Goods</span><SegOpts value={piece.hasComponents} onChange={(v) => setHasComponents(col.id, piece.id, v)} options={[["no", "None"], ["yes", "Yes"]]} /></div>
+                  {piece.hasComponents === "yes" && (
+                    <>
+                      {piece.components.map((k) => (
+                        <div className="comp-row" key={k.id}>
+                          <AutoInput className="minput" suggestions={library.components} value={k.name} onChange={(v) => upComp(col.id, piece.id, k.id, "name", v)} onBlur={() => learn("components", k.name)} placeholder="Compote vase" />
+                          <input className="minput" value={k.qty} onChange={(e) => upComp(col.id, piece.id, k.id, "qty", e.target.value)} placeholder="qty" />
+                          <button className="btn-x" onClick={() => removeComp(col.id, piece.id, k.id)}>✕</button>
+                        </div>
+                      ))}
+                      <button className="btn btn-grey btn-xs" onClick={() => addComp(col.id, piece.id)}>＋ Add item</button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+            <button className="btn btn-dashed" onClick={() => addPiece(col.id)} style={{ marginTop: 4 }}>＋ Add arrangement</button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderProduction = () => (
+    <div>
+      <div className="sh">Production</div>
+      <div className="sd">Per-arrangement recipe alongside total pull for all pieces.</div>
+      {derived.built.map((col) => (
+        <div key={col.id}>
+          <div className="col-heading">{col.name || "Unnamed Collection"}</div>
+          {col.pieces.map((piece) => {
+            const hasPulls = piece.pulls.length > 0;
+            const hasComps = piece.comps.length > 0;
+            const qty = piece.qty;
+            const isTotal = piece.mode === "total";
+            return (
+              <div className="piece-card" key={piece.id}>
+                {/* Inverted header — name only, no arrangement number */}
+                <div className="piece-card-header">
+                  <span className="piece-name">{piece.name || "Unnamed"}</span>
+                  <span className="piece-qty-info">
+                    <strong>{qty}</strong> {qty === 1 ? "arrangement" : "arrangements"}
+                  </span>
+                </div>
+
+                {/* Reference photo if present */}
+                {piece.image && (
+                  <div style={{ borderBottom: "1px solid var(--border-light)" }}>
+                    <img src={piece.image} alt=""
+                      style={{ maxHeight: 160, width: "100%", objectFit: "cover", display: "block" }} />
+                  </div>
+                )}
+
+                {/* FRESH — always two-column: Per 1 / Total */}
+                {hasPulls && (
+                  <div className="prod-section">
+                    <div className="prod-sec-label">Fresh</div>
+                    <div className="prod-tbl-head">
+                      <span>Ingredient</span>
+                      <span>{isTotal ? "Total pull" : "Per 1"}</span>
+                      <span>{isTotal ? "Per arr." : `Total × ${qty}`}</span>
+                    </div>
+                    {piece.pulls.map((s, i) => {
+                      const key = piece.id + "-s" + i;
+                      const checked = !!checkedStems[key];
+                      const perOne = isTotal
+                        ? (s.total != null && qty > 0 ? fmtFrac(s.total / qty) : "?")
+                        : (s.each != null ? fmtFrac(s.each) : "?");
+                      const totalAmt = s.total != null ? fmtFrac(s.total) : "?";
+                      const unit = s.unit !== "stems" ? s.unit : "";
+                      return (
+                        <div
+                          className={`prod-tbl-row${checked ? " row-done" : ""}`}
+                          key={i}
+                          onClick={() => setCheckedStems((p) => ({ ...p, [key]: !p[key] }))}
+                        >
+                          <span className="prod-ingredient">{s.name}</span>
+                          <span className="prod-qty">
+                            {isTotal ? totalAmt : perOne}
+                            {unit && <span className="prod-qty-unit">{unit}</span>}
+                          </span>
+                          <span className="prod-qty-total">
+                            {isTotal ? perOne : totalAmt}
+                            {unit && <span className="prod-qty-unit">{unit}</span>}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* HARD GOODS */}
+                {hasComps && (
+                  <div className="prod-section" style={{ borderTop: hasPulls ? "4px solid #000" : "none" }}>
+                    <div className="prod-sec-label">Hard Goods</div>
+                    <div className="prod-tbl-head">
+                      <span>Item</span>
+                      <span></span>
+                      <span>Total Qty</span>
+                    </div>
+                    {piece.comps.map((k, i) => {
+                      const key = piece.id + "-c" + i;
+                      const checked = !!checkedStems[key];
+                      return (
+                        <div
+                          className={`prod-hg-row${checked ? " row-done" : ""}`}
+                          key={i}
+                          onClick={() => setCheckedStems((p) => ({ ...p, [key]: !p[key] }))}
+                        >
+                          <span className="prod-ingredient">{k.name}</span>
+                          <span className="prod-qty"></span>
+                          <span className="prod-qty-total">{k.qty ? `× ${k.qty}` : "—"}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      {derived.flags.length > 0 && (
+        <div className="flag">
+          <h4>Needs Attention</h4>
+          {derived.flags.map((f, i) => <p key={i}>{f}</p>)}
+        </div>
+      )}
+      <div className="export-row">
+        <button className="btn btn-line" onClick={() => setPage(3)}>← Edit</button>
+        <button className="btn btn-ink" onClick={() => exportPdf("production")}>Production PDF</button>
+      </div>
+    </div>
+  );
+
+    const renderMaster = () => {
+    const entries = Object.entries(derived.totals);
+    const getOu = (key) => orderUnits[key] || { type: "bunch10", boxSize: "", adjMode: "exact", customQty: "" };
+    const setOuField = (key, field, val) => setOrderUnits((p) => ({ ...p, [key]: { ...getOu(key), [field]: val } }));
+    const calcOrder = (exactTotal, ou) => {
+      const def = OU_TYPES.find((t) => t.value === ou.type) || OU_TYPES[1];
+      const size = ou.type === "box" ? (parseInt(ou.boxSize) || 1) : def.size;
+      const adjMode = ou.adjMode || "exact";
+      const baseCount = Math.ceil(exactTotal / size);
+      if (adjMode === "custom") {
+        const c = ou.customQty !== undefined && ou.customQty !== "" ? parseInt(ou.customQty) || 0 : baseCount;
+        return { count: c, label: def.desc };
+      }
+      const adjTotal = adjMode === "buffer" ? exactTotal * 1.1 : exactTotal;
+      return { count: Math.ceil(adjTotal / size), label: def.desc };
+    };
+    return (
+      <div>
+        <div className="sh">Fresh</div>
+        <div className="sd">Master stem counts with the math behind each total.</div>
+        {entries.length === 0 && <div style={{ color: "var(--label-2)", padding: "24px 0", fontSize: 15, fontStyle: "italic" }}>No fresh ingredients entered yet. Add some on the Build tab.</div>}
+        {entries.map(([key, total]) => {
+          const [name, unit] = key.split("||");
+          const parts = derived.mathParts[key] || [];
+          return (
+            <div className="fmc" key={key}>
+              <div className="fmc-head"><span className="fmc-name">{name}</span>{unit !== "stems" && <span className="fmc-unit">{unit}</span>}</div>
+              <div className="fmc-col-head"><span></span><span>Arrangement</span><span>Calc</span><span>Total</span></div>
+              {parts.map((p, i) => (
+                <div className="fmc-row" key={i}>
+                  <span className="fmc-idx">#{p.gIdx}</span>
+                  <span className="fmc-piece">{p.label}</span>
+                  <span className="fmc-calc">{p.mode === "total" ? <span>total pull</span> : <>{fmtFrac(p.each)} each × {p.qty}</>}</span>
+                  <span className="fmc-result">{fmtFrac(p.total)}</span>
+                </div>
+              ))}
+              <div className="fmc-foot">
+                <span className="fmc-foot-exact">Total: <strong>{fmtFrac(total)}{unit !== "stems" ? " " + unit : ""}</strong></span>
+              </div>
+            </div>
+          );
+        })}
+        <div className="export-row">
+          <button className="btn btn-line" onClick={() => exportPdf("master")}>Fresh PDF</button>
+        </div>
+
+        <div className="section-lbl" style={{ marginTop: 8 }}>Wholesale Order</div>
+        <div className="sd">Stem counts auto-calculated. Adjust each item to a 10% buffer or override as needed.</div>
+        {entries.length === 0 && <div style={{ color: "var(--label-2)", padding: "16px 0", fontSize: 15, fontStyle: "italic" }}>Nothing to order yet.</div>}
+        {entries.length > 0 && (
+          <>
+            <div className="order-head-row"><span>Fresh Item</span><span>Exact</span><span>Order in</span><span>Qty</span></div>
+            <div style={{ marginBottom: 20 }}>
+              {entries.map(([key, exactTotal]) => {
+                const [name, unit] = key.split("||");
+                const ou = getOu(key);
+                const adjMode = ou.adjMode || "exact";
+                const { count, label } = calcOrder(exactTotal, ou);
+                return (
+                  <div className="order-item" key={key}>
+                    <div className="order-row">
+                      <span className="order-name">{name}</span>
+                      <span className="order-stems">{fmtFrac(exactTotal)}{unit !== "stems" ? <span style={{ fontSize: 11 }}> {unit}</span> : null}</span>
+                      <span className="order-unit-col">
+                        <select className="order-select" value={ou.type || "bunch10"} onChange={(e) => setOuField(key, "type", e.target.value)}>
+                          {OU_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </select>
+                        {ou.type === "box" && <input className="order-size" value={ou.boxSize || ""} onChange={(e) => setOuField(key, "boxSize", e.target.value)} placeholder="units / box" />}
+                      </span>
+                      {adjMode === "custom" ? (
+                        <input className="order-count-input" type="number" min="0" value={ou.customQty !== undefined && ou.customQty !== "" ? ou.customQty : count} onChange={(e) => setOuField(key, "customQty", e.target.value)} />
+                      ) : (
+                        <span className="order-count">{count}<span className="order-count-lbl"> {label}{count !== 1 ? (label === "bunch" || label === "box" ? "es" : "s") : ""}</span></span>
+                      )}
+                    </div>
+                    <div className="order-adjust-row">
+                      <span className="order-adjust-lbl">Quantity</span>
+                      <SegOpts value={adjMode} onChange={(v) => setOuField(key, "adjMode", v)} options={[["exact", "Exact"], ["buffer", "+10%"], ["custom", "Custom"]]} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="export-row">
+              <button className="btn btn-ink" onClick={() => exportPdf("order")}>Order Form PDF</button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const OU_TYPES = [
+    { value: "stems", label: "Stems", size: 1, desc: "stem" },
+    { value: "bunch10", label: "Bunches / 10", size: 10, desc: "bunch" },
+    { value: "bunch25", label: "Bunches / 25", size: 25, desc: "bunch" },
+    { value: "bunch50", label: "Bunches / 50", size: 50, desc: "bunch" },
+    { value: "box", label: "Box (custom)", size: null, desc: "box" },
+  ];
+
+  const renderHardGoods = () => (
+    <div>
+      <div className="sh">Hard Goods</div>
+      <div className="sd">Vessels, mechanics &amp; hard goods by arrangement. Add extras below.</div>
+      <div className="rev-wrap">
+        {derived.hgGroups.length === 0 && hgExtras.length === 0 && <div style={{ color: "var(--label-2)", fontSize: 14, fontStyle: "italic" }}>Nothing yet — add components on the Build tab.</div>}
+        {derived.hgGroups.map((g) => (
+          <div key={g.name} style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--g4)", marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid var(--g2)" }}>{g.name}</div>
+            {g.items.map((it, i) => (
+              <div className="ck" key={i}>
+                <span className="ck-qty">{it.qty ? `×${it.qty}` : "—"}</span>
+                <span className="ck-grow">{it.item}<span className="ck-src"> — {it.src}</span></span>
+              </div>
+            ))}
+          </div>
+        ))}
+        {hgExtras.length > 0 && (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--g4)", marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid var(--g2)" }}>Extras</div>
+            {hgExtras.map((x) => (
+              <div className="ck" key={x.id}>
+                <span className="ck-qty">{x.qty ? `×${x.qty}` : "—"}</span>
+                <span className="ck-grow">{x.name}</span>
+                <button className="btn-x" onClick={() => removeHgExtra(x.id)}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+          <AutoInput className="minput" suggestions={library.components} value={newHg.name} onChange={(v) => setNewHg((p) => ({ ...p, name: v }))} placeholder="Add an item" />
+          <input className="minput" style={{ width: 76, textAlign: "center" }} value={newHg.qty} onChange={(e) => setNewHg((p) => ({ ...p, qty: e.target.value }))} placeholder="qty" />
+          <button className="btn btn-ink btn-sm" onClick={addHgExtra}>＋ Add</button>
+        </div>
+      </div>
+      <div className="export-row"><button className="btn btn-ink" onClick={() => exportPdf("hardgoods")}>Hard Goods PDF</button></div>
+    </div>
+  );
+
+  const renderLoad = () => {
+    const stems = Object.entries(derived.totals);
+    const addArr = (piece, colName) => addToLoad(piece.name || "Unnamed", String(piece.qty), colName || "Collection");
+    const addColArrangements = (col) => col.pieces.forEach((p) => addArr(p, col.name));
+    const addAllFlorals = () => stems.forEach(([key, total]) => { const [name, unit] = key.split("||"); addToLoad(`${name}${unit !== "stems" ? " (" + unit + ")" : ""}`, fmtFrac(total), "Fresh"); });
+    const addAllAccessories = () => {
+      derived.hgGroups.forEach((g) => g.items.forEach((it) => addToLoad(it.item, it.qty || "", it.src)));
+      hgExtras.forEach((x) => addToLoad(x.name, x.qty || "", "Hard Goods"));
+    };
+    return (
+      <div>
+        <div className="sh">Load</div>
+        <div className="sd">What goes in the van — by arrangement, fresh ingredient, or hard goods.</div>
+        <div className="section-lbl">Load List</div>
+        <div className="rev-wrap" style={{ marginBottom: 22 }}>
+          {finalLoad.length === 0 && <div style={{ fontSize: 14, fontStyle: "italic", color: "var(--label-2)" }}>Nothing added yet.</div>}
+          {finalLoad.map((it) => (
+            <div className="ck" key={it.id}>
+              <button className={`ck-box ${it.done ? "on" : ""}`} onClick={() => toggleLoad(it.id)}>{it.done ? "✓" : ""}</button>
+              <span className="ck-qty">{it.qty ? `×${it.qty}` : "—"}</span>
+              <span className={`ck-grow ${it.done ? "ck-done" : ""}`}>{it.label}<span className="ck-src"> — {it.src}</span></span>
+              <button className="btn-x" onClick={() => removeLoad(it.id)}>✕</button>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+            <input className="minput" style={{ flex: 1, minWidth: 180 }} value={newLoad.name} onChange={(e) => setNewLoad((p) => ({ ...p, name: e.target.value }))} placeholder="Custom item" />
+            <input className="minput" style={{ width: 72, textAlign: "center" }} value={newLoad.qty} onChange={(e) => setNewLoad((p) => ({ ...p, qty: e.target.value }))} placeholder="qty" />
+            <button className="btn btn-ink btn-sm" onClick={addCustomLoad}>＋</button>
+          </div>
+        </div>
+        <div className="section-lbl">Arrangements</div>
+        {derived.built.map((col) => (
+          <div key={col.id} style={{ borderTop: "1px solid var(--black)", marginBottom: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: "1px solid var(--g2)" }}>
+              <span style={{ flex: 1, fontWeight: 700, fontSize: 14, letterSpacing: "-.01em" }}>{col.name || "Unnamed"}</span>
+              <button className="btn btn-ink btn-xs" onClick={() => addColArrangements(col)}>Add all</button>
+            </div>
+            {col.pieces.map((piece) => {
+              const added = inLoad(piece.name || "Unnamed", col.name || "Collection");
+              return (
+                <div className="ck" key={piece.id} style={{ borderBottom: "1px solid var(--g2)" }}>
+                  <span className="badge" style={{ fontSize: 10, padding: "2px 8px", flexShrink: 0 }}>{piece.gIdx}</span>
+                  <span className="ck-grow" style={{ fontSize: 14, fontWeight: 500 }}>{piece.name || "Unnamed"}<span style={{ fontSize: 12, fontWeight: 400, marginLeft: 8, color: "var(--label-2)" }}>×{piece.qty}</span></span>
+                  <button className="btn-add" disabled={added} onClick={() => addArr(piece, col.name)}>{added ? "Added" : "Add"}</button>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+        {stems.length > 0 && (
+          <>
+            <div className="section-lbl" style={{ display: "flex", justifyContent: "space-between" }}><span>Individual Fresh</span><button className="btn btn-grey btn-xs" onClick={addAllFlorals}>Add all</button></div>
+            <div className="rev-wrap">
+              {stems.map(([key, total]) => {
+                const [name, unit] = key.split("||");
+                const lbl = `${name}${unit !== "stems" ? " (" + unit + ")" : ""}`;
+                const added = inLoad(lbl, "Fresh");
+                return (
+                  <div className="ck" key={key}>
+                    <span className="ck-qty">×{fmtFrac(total)}</span>
+                    <span className="ck-grow">{name}</span>
+                    <button className="btn-add" disabled={added} onClick={() => addToLoad(lbl, fmtFrac(total), "Fresh")}>{added ? "Added" : "Add"}</button>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+        {(derived.hgGroups.length > 0 || hgExtras.length > 0) && (
+          <>
+            <div className="section-lbl" style={{ display: "flex", justifyContent: "space-between" }}><span>Hard Goods</span><button className="btn btn-grey btn-xs" onClick={addAllAccessories}>Add all</button></div>
+            <div className="rev-wrap">
+              {derived.hgGroups.map((g) => (
+                <div key={g.name}>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--g4)", margin: "8px 0 4px" }}>{g.name}</div>
+                  {g.items.map((it, i) => {
+                    const added = inLoad(it.item, it.src);
+                    return (
+                      <div className="ck" key={i}>
+                        <span className="ck-qty">{it.qty ? `×${it.qty}` : "—"}</span>
+                        <span className="ck-grow">{it.item}<span className="ck-src"> — {it.src}</span></span>
+                        <button className="btn-add" disabled={added} onClick={() => addToLoad(it.item, it.qty || "", it.src)}>{added ? "Added" : "Add"}</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+              {hgExtras.map((x) => {
+                const added = inLoad(x.name, "Hard Goods");
+                return (
+                  <div className="ck" key={x.id}>
+                    <span className="ck-qty">{x.qty ? `×${x.qty}` : "—"}</span>
+                    <span className="ck-grow">{x.name}</span>
+                    <button className="btn-add" disabled={added} onClick={() => addToLoad(x.name, x.qty || "", "Hard Goods")}>{added ? "Added" : "Add"}</button>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+        <div className="export-row">
+          <button className="btn btn-ink" disabled={finalLoad.length === 0} onClick={() => exportPdf("load")}>Load List PDF</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderContactSheet = () => {
+    const list = contacts.filter((c) => (c.name.trim() || c.phone.trim() || c.email.trim()) && c.includeInPdf !== false);
+    const hiddenCount = contacts.filter((c) => (c.name.trim() || c.phone.trim() || c.email.trim()) && c.includeInPdf === false).length;
+    return (
+      <div>
+        <div className="sh">Team Sheet</div>
+        <div className="sd">Printable contact sheet for the full team — matches the Team Sheet PDF exactly.</div>
+        {hiddenCount > 0 && <div style={{ fontSize: 12, color: "var(--g4)", fontStyle: "italic", marginBottom: 10 }}>{hiddenCount} contact{hiddenCount === 1 ? "" : "s"} hidden from PDF — manage on the Contacts tab.</div>}
+        <div className="rev-wrap">
+          {list.length === 0 && <div style={{ color: "var(--label-2)", fontSize: 14 }}>No contacts yet — add them on the Contacts tab.</div>}
+          {list.map((c) => (
+            <div key={c.id} style={{ paddingBottom: 16, marginBottom: 16, borderBottom: "1px solid var(--g2)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5, flexWrap: "wrap" }}>
+                <span className="badge badge-soft">{pad2(contacts.indexOf(c) + 1)}</span>
+                {c.contactType === "staff" && <span className="contact-type-badge staff">Staff</span>}
+                {c.contactType === "vendor" && <span className="contact-type-badge vendor">Vendor</span>}
+                {c.contactType === "venue" && <span className="contact-type-badge venue">Venue</span>}
+                <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-.01em" }}>{c.name || "[Name needed]"}</span>
+              </div>
+              {c.role && <div style={{ fontSize: 13, marginBottom: 7, paddingLeft: 2, color: "var(--g4)" }}>{c.role}{c.businessName ? " · " + c.businessName : ""}</div>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px", fontSize: 14 }}>
+                {c.phone && <div><span style={{ color: "var(--g4)", fontSize: 11 }}>Phone </span>{c.phone}</div>}
+                {c.email && <div><span style={{ color: "var(--g4)", fontSize: 11 }}>Email </span>{c.email}</div>}
+              </div>
+              {c.notes && <div style={{ fontSize: 13, color: "var(--g4)", marginTop: 7, paddingLeft: 2 }}>{c.notes}</div>}
+            </div>
+          ))}
+        </div>
+        <div className="export-row">
+          <button className="btn btn-line" onClick={() => setPage(2)}>← Edit</button>
+          <button className="btn btn-ink" onClick={() => exportPdf("contacts")}>Team Sheet PDF</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSchedule = () => {
+    const staffNames = contacts.filter((c) => c.contactType === "staff" && c.name.trim()).map((c) => c.name.trim());
+    const byType = (t) => contacts.filter((c) => c.contactType === t && c.name.trim());
+    const contactGroups = [
+      { type: "staff", label: "Staff", list: byType("staff") },
+      { type: "venue", label: "Venue", list: byType("venue") },
+      { type: "vendor", label: "Vendor", list: byType("vendor") },
+    ];
+    return (
+    <div>
+      <div className="sh">Event Timeline</div>
+      <div className="sd">Day-by-day timeline with location, staff, load-in/out, dismantling &amp; floorplans.</div>
+
+      <div className="section-lbl">Venue Information</div>
+      <div className="card" style={{ fontSize: 14, lineHeight: 1.7 }}>
+        <div style={{ fontWeight: 700 }}>{info.client || "[Client / Event Name]"}</div>
+        <div>{info.venue || "[Venue]"}</div>
+        <div>{[info.venue_address, info.venue_city, info.venue_state, info.venue_zip].filter(Boolean).join(", ") || "[Address]"}</div>
+        <div style={{ color: "var(--muted-fg)", marginTop: 4 }}>{info.event_date ? fmtDateLong(info.event_date) : "[Event date]"}</div>
+      </div>
+
+      <div className="section-lbl" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span>Staff, Venue &amp; Vendor Contacts</span>
+        <button type="button" className={`btn btn-sm ${showTimelineContacts ? "btn-ink" : "btn-grey"}`} onClick={() => setShowTimelineContacts((v) => !v)}>
+          {showTimelineContacts ? "Shown on this page" : "Hidden from this page"}
+        </button>
+      </div>
+      {showTimelineContacts ? (
+        <div className="card">
+          {contactGroups.map((g) => (
+            <div key={g.type} style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--g4)", marginBottom: 6 }}>{g.label}</div>
+              {g.list.length === 0 ? (
+                <div style={{ fontSize: 13, fontStyle: "italic", color: "var(--g4)" }}>None added yet.</div>
+              ) : (
+                <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+                  {g.list.map((c, i) => (
+                    <span key={c.id}>{c.name}{c.role ? ` (${c.role})` : ""}{i < g.list.length - 1 ? ", " : ""}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          <button className="btn btn-grey btn-sm" onClick={() => setPage(2)}>Manage on Contacts tab →</button>
+        </div>
+      ) : (
+        <div className="card" style={{ fontSize: 13, fontStyle: "italic", color: "var(--label-2)" }}>Hidden from this page and its PDF. Tap the button above to show it again.</div>
+      )}
+
+      <div className="section-lbl">Pre-Event</div>
+      {preEventDays.map((day, di) => (
+        <DayCard
+          key={day.id}
+          day={day}
+          label={`Pre-Event — Day ${di + 1}`}
+          allowRemove={preEventDays.length > 1}
+          onRemove={() => removeDayFrom(setPreEventDays, day.id)}
+          onDateChange={(v) => upDayField(setPreEventDays, day.id, "date", v)}
+          staffNames={staffNames}
+          onAddRow={() => addRowTo(setPreEventDays, day.id)}
+          onRemoveRow={(rid) => removeRowFrom(setPreEventDays, day.id, rid)}
+          onUpRow={(rid, k, v) => upRowIn(setPreEventDays, day.id, rid, k, v)}
+          onToggleBlock={(bk) => toggleBlockIn(setPreEventDays, day.id, bk)}
+          onUpBlockField={(bk, f, v) => upBlockFieldIn(setPreEventDays, day.id, bk, f, v)}
+          onAddObjective={() => addObjectiveTo(setPreEventDays, day.id)}
+          onRemoveObjective={(oi) => removeObjectiveFrom(setPreEventDays, day.id, oi)}
+          onUpObjective={(oi, v) => upObjectiveIn(setPreEventDays, day.id, oi, v)}
+        />
+      ))}
+      <button className="btn btn-dashed" onClick={() => addDayTo(setPreEventDays)} style={{ marginBottom: 24 }}>＋ Add another pre-event date</button>
+
+      <div className="section-lbl">Event Day</div>
+      <DayCard
+        key={eventDay[0].id}
+        day={eventDay[0]}
+        label="Event Day"
+        allowRemove={false}
+        onRemove={() => {}}
+        onDateChange={(v) => upDayField(setEventDay, eventDay[0].id, "date", v)}
+        staffNames={staffNames}
+        onAddRow={() => addRowTo(setEventDay, eventDay[0].id)}
+        onRemoveRow={(rid) => removeRowFrom(setEventDay, eventDay[0].id, rid)}
+        onUpRow={(rid, k, v) => upRowIn(setEventDay, eventDay[0].id, rid, k, v)}
+        onToggleBlock={(bk) => toggleBlockIn(setEventDay, eventDay[0].id, bk)}
+        onUpBlockField={(bk, f, v) => upBlockFieldIn(setEventDay, eventDay[0].id, bk, f, v)}
+        onAddObjective={() => addObjectiveTo(setEventDay, eventDay[0].id)}
+        onRemoveObjective={(oi) => removeObjectiveFrom(setEventDay, eventDay[0].id, oi)}
+        onUpObjective={(oi, v) => upObjectiveIn(setEventDay, eventDay[0].id, oi, v)}
+      />
+      <div style={{ marginBottom: 24 }} />
+
+      <div className="section-lbl">Post-Event</div>
+      {postEventDays.map((day, di) => (
+        <DayCard
+          key={day.id}
+          day={day}
+          label={`Post-Event — Day ${di + 1}`}
+          allowRemove={postEventDays.length > 1}
+          onRemove={() => removeDayFrom(setPostEventDays, day.id)}
+          onDateChange={(v) => upDayField(setPostEventDays, day.id, "date", v)}
+          staffNames={staffNames}
+          onAddRow={() => addRowTo(setPostEventDays, day.id)}
+          onRemoveRow={(rid) => removeRowFrom(setPostEventDays, day.id, rid)}
+          onUpRow={(rid, k, v) => upRowIn(setPostEventDays, day.id, rid, k, v)}
+          onToggleBlock={(bk) => toggleBlockIn(setPostEventDays, day.id, bk)}
+          onUpBlockField={(bk, f, v) => upBlockFieldIn(setPostEventDays, day.id, bk, f, v)}
+          onAddObjective={() => addObjectiveTo(setPostEventDays, day.id)}
+          onRemoveObjective={(oi) => removeObjectiveFrom(setPostEventDays, day.id, oi)}
+          onUpObjective={(oi, v) => upObjectiveIn(setPostEventDays, day.id, oi, v)}
+        />
+      ))}
+      <button className="btn btn-dashed" onClick={() => addDayTo(setPostEventDays)} style={{ marginBottom: 24 }}>＋ Add another post-event date</button>
+
+      <div className="section-lbl">Notes / TBD</div>
+      <div className="card">
+        <textarea className="ftextarea" style={{ minHeight: 90 }} value={scheduleNotes} onChange={(e) => setScheduleNotes(e.target.value)} placeholder="Anything unconfirmed — final headcount, vendor arrival windows, weather contingency…" />
+      </div>
+
+      <div className="section-lbl">Floorplans</div>
+      <div className="card">
+        {floorplans.map((fp) => (
+          <div className="fp-row" key={fp.id}>
+            <input className="minput" style={{ flex: 1 }} value={fp.label} onChange={(e) => upFloorplan(fp.id, e.target.value)} placeholder="Welcome Party Floorplan" />
+            <button className="btn-x" disabled={floorplans.length === 1} onClick={() => removeFloorplan(fp.id)}>✕</button>
+          </div>
+        ))}
+        <button className="btn btn-grey btn-xs" onClick={addFloorplan}>＋ Add floorplan</button>
+      </div>
+
+      <div className="export-row">
+        <button className="btn btn-ink" onClick={() => exportPdf("schedule")}>Event Timeline PDF</button>
+      </div>
+    </div>
+    );
+  };
+
+  const renderIndex = () => {
+    const addLib = (cat) => { const v = (newLibItem[cat] || "").trim(); if (!v) return; learn(cat, v); setNewLibItem((p) => ({ ...p, [cat]: "" })); };
+    return (
+      <div>
+        <div className="sh">Library</div>
+        <div className="sd" style={{ fontStyle: "italic" }}>Powers autofill after 2 characters. Names save automatically as you type.</div>
+        {Object.keys(LIB_LABELS).map((cat) => (
+          <div className="idx-cat" key={cat}>
+            <button className="idx-cat-head" onClick={() => setOpenIdx((p) => ({ ...p, [cat]: !p[cat] }))}>
+              <span style={{ fontWeight: 600 }}>{LIB_LABELS[cat]}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span className="idx-count">{library[cat].length}</span>
+                <span className="ql-chev">{openIdx[cat] ? "⌄" : "›"}</span>
+              </span>
+            </button>
+            {openIdx[cat] && (
+              <div style={{ padding: "8px 0 16px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 12 }}>
+                  {library[cat].length === 0 && <span style={{ fontSize: 13, fontStyle: "italic", color: "var(--g4)" }}>Nothing saved yet.</span>}
+                  {library[cat].map((v) => (
+                    <span className="idx-chip" key={v}>{v}<button title="Remove" onClick={() => forget(cat, v)}>✕</button></span>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input className="minput" style={{ flex: 1, fontSize: 13 }} value={newLibItem[cat] || ""} onChange={(e) => setNewLibItem((p) => ({ ...p, [cat]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") addLib(cat); }} placeholder={`Add to ${LIB_LABELS[cat]}…`} />
+                  <button className="btn btn-ink btn-xs" onClick={() => addLib(cat)}>Add</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const fv = (v, label) => v || `[${label}]`;
+  const fmtDateLong = (v) => { if (!v) return null; try { const d = new Date(v + "T00:00:00"); return d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }); } catch (e) { return v; } };
+
+  const PdfHeader = ({ section }) => {
+    const addrParts = [info.venue_address, info.venue_city, info.venue_state, info.venue_zip].filter(Boolean);
+    const setupVal = info.setup_tbd ? "TBD" : (info.setup ? new Date(info.setup).toLocaleString() : null);
+    const takedownVal = info.takedown_tbd ? "TBD" : (info.takedown ? new Date(info.takedown).toLocaleString() : null);
+    const v2AddrParts = [info.venue2_address, info.venue2_city, info.venue2_state, info.venue2_zip].filter(Boolean);
+    const hasVenue2 = !!(info.venue2.trim() || v2AddrParts.length);
+    return (
+      <div>
+        <div className="pd-eyebrow">Erin Mcdonald Co. · Production Sheet</div>
+        <div className="pd-client">{fv(info.client, "Client / Event Name")}</div>
+        <div className="pd-sect-name">{section}</div>
+        <hr className="pd-rule" />
+        <div className="pd-meta">
+          <div><b>Event Date</b>{fv(fmtDateLong(info.event_date), "needs confirmation")}</div>
+          <div><b>Venue</b>{fv(info.venue, "needs confirmation")}</div>
+          <div><b>Address</b>{addrParts.length ? addrParts.join(", ") : "[needs confirmation]"}</div>
+          <div><b>Setup</b>{fv(setupVal, "needs confirmation")}</div>
+          <div><b>Takedown</b>{fv(takedownVal, "needs confirmation")}</div>
+          <div><b>Planner</b>{fv(info.planner_name, "needs confirmation")}</div>
+          <div><b>Designer</b>{fv(info.designer_name, "needs confirmation")}</div>
+        </div>
+        {hasVenue2 && (
+          <div className="pd-meta" style={{ marginTop: -6 }}>
+            <div><b>Second Venue</b>{info.venue2 || "—"}</div>
+            <div><b>Address</b>{v2AddrParts.length ? v2AddrParts.join(", ") : "—"}</div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  const PdfFoot = () => <div className="pd-foot"><span>Erin Mcdonald Co.</span><span>{fv(info.client, "Event")}</span></div>;
+
+  const PdfProduction = () => (
+    <div className="pd-section">
+      <PdfHeader section="Production" />
+      {derived.built.map((col) => (
+        <div key={col.id}>
+          <div className="pd-coltitle">{col.name || "Unnamed Collection"}</div>
+          {col.pieces.map((piece) => {
+            const isTotal = piece.mode === "total";
+            return (
+              <div className="pd-piece" key={piece.id}>
+                {/* Inverted header — name + qty, NO item number */}
+                <div className="pd-piece-head">
+                  <span className="pd-piece-title">{piece.name || "Unnamed"}</span>
+                  <span className="pd-piece-qty-big">{piece.qty} {piece.qty === 1 ? "arr." : "arr."}</span>
+                </div>
+                <div className="pd-piece-body">
+                  {piece.image && <img className="pd-img" src={piece.image} alt="" style={{ width: "100%", maxHeight: 120, objectFit: "cover" }} />}
+                  {/* Fresh two-column table */}
+                  {piece.pulls.length > 0 && (
+                    <div>
+                      <div className="pd-sec-label">Fresh</div>
+                      <div className="pd-rx-head">
+                        <span>Ingredient</span>
+                        <span>{isTotal ? "Total pull" : "Per 1"}</span>
+                        <span>{isTotal ? "Per arr." : `Total × ${piece.qty}`}</span>
+                      </div>
+                      {piece.pulls.map((s, i) => {
+                        const perOne = isTotal
+                          ? (s.total != null && piece.qty > 0 ? fmtFrac(s.total / piece.qty) : "?")
+                          : (s.each != null ? fmtFrac(s.each) : "?");
+                        const totalAmt = s.total != null ? fmtFrac(s.total) : "?";
+                        const unit = s.unit !== "stems" ? s.unit : "";
+                        return (
+                          <div className="pd-rx-row" key={i}>
+                            <span className="pd-rx-name">{s.name}</span>
+                            <span className="pd-rx-each">
+                              {isTotal ? totalAmt : perOne}
+                              {unit && <span className="pd-rx-unit">{unit}</span>}
+                            </span>
+                            <span className="pd-rx-total">
+                              {isTotal ? perOne : totalAmt}
+                              {unit && <span className="pd-rx-unit">{unit}</span>}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {/* Hard goods */}
+                  {piece.comps.length > 0 && (
+                    <div style={{ borderTop: piece.pulls.length > 0 ? "3px solid #000" : "none" }}>
+                      <div className="pd-sec-label" style={{ marginTop: 8 }}>Hard Goods</div>
+                      <div className="pd-hg-head">
+                        <span>Item</span>
+                        <span>Total Qty</span>
+                      </div>
+                      {piece.comps.map((k, i) => (
+                        <div className="pd-hg-row" key={i}>
+                          <span className="pd-rx-name">{k.name}</span>
+                          <span className="pd-hg-qty">{k.qty ? `× ${k.qty}` : "—"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      <PdfFoot />
+    </div>
+  );
+
+    const PdfMaster = () => {
+    const entries = Object.entries(derived.totals);
+    return (
+      <div className="pd-section">
+        <PdfHeader section="Fresh — Master Totals" />
+        {entries.map(([key, total]) => {
+          const [name, unit] = key.split("||");
+          const parts = derived.mathParts[key] || [];
+          return (
+            <div key={key} style={{ marginBottom: 16, pageBreakInside: "avoid" }}>
+              <div className="pd-mrow head"><span>{name}{unit !== "stems" ? " (" + unit + ")" : ""}</span><span>Calc</span><span>Total</span></div>
+              {parts.map((p, i) => (
+                <div className="pd-mrow" key={i}>
+                  <span className="pd-mname">#{p.gIdx} {p.label}</span>
+                  <span className="pd-mmath">{p.mode === "total" ? "total pull" : `${fmtFrac(p.each)} × ${p.qty}`}</span>
+                  <span className="pd-mnum">{fmtFrac(p.total)}</span>
+                </div>
+              ))}
+              <div className="pd-mrow" style={{ borderBottom: "none", fontWeight: 700 }}><span>Total</span><span></span><span className="pd-mnum">{fmtFrac(total)}</span></div>
+            </div>
+          );
+        })}
+        <PdfFoot />
+      </div>
+    );
+  };
+
+  const STUDIO_ADDRESS = { name: "Erin McDonald Co", line1: "510 State ST, Unit 5", line2: "Rochester, NY 14608" };
+
+  const PdfOrder = () => {
+    const entries = Object.entries(derived.totals);
+    const OU_PDF = [{ value: "stems", size: 1, desc: "stem" }, { value: "bunch10", size: 10, desc: "bunch" }, { value: "bunch25", size: 25, desc: "bunch" }, { value: "bunch50", size: 50, desc: "bunch" }, { value: "box", size: null, desc: "box" }];
+    return (
+      <div className="pd-section">
+        <PdfHeader section="Fresh Order Form" />
+        <div className="pd-delivery">
+          <div className="pd-colhead">Deliver To</div>
+          <div style={{ fontWeight: 700 }}>{STUDIO_ADDRESS.name}</div>
+          <div>{STUDIO_ADDRESS.line1}</div>
+          <div>{STUDIO_ADDRESS.line2}</div>
+        </div>
+        <div className="pd-mrow head"><span>Fresh Item</span><span>Exact</span><span>Order Qty</span></div>
+        {entries.map(([key, exactTotal]) => {
+          const [name, unit] = key.split("||");
+          const ou = orderUnits[key] || { type: "bunch10", boxSize: "", adjMode: "exact", customQty: "" };
+          const adjMode = ou.adjMode || "exact";
+          const def = OU_PDF.find((t) => t.value === ou.type) || OU_PDF[1];
+          const size = ou.type === "box" ? (parseInt(ou.boxSize) || 1) : def.size;
+          let count;
+          if (adjMode === "custom") {
+            count = ou.customQty !== undefined && ou.customQty !== "" ? parseInt(ou.customQty) || 0 : Math.ceil(exactTotal / size);
+          } else {
+            const adjTotal = adjMode === "buffer" ? exactTotal * 1.1 : exactTotal;
+            count = Math.ceil(adjTotal / size);
+          }
+          return (
+            <div className="pd-mrow" key={key}>
+              <span className="pd-mname">{name}</span>
+              <span>{fmtFrac(exactTotal)}{unit !== "stems" ? " " + unit : ""}</span>
+              <span className="pd-mnum">{count} {def.desc}{count !== 1 ? "es" : ""}{adjMode === "buffer" ? " (+10%)" : adjMode === "custom" ? " (custom)" : ""}</span>
+            </div>
+          );
+        })}
+        <PdfFoot />
+      </div>
+    );
+  };
+
+  const PdfHardGoods = () => (
+    <div className="pd-section">
+      <PdfHeader section="Hard Goods" />
+      {derived.hgGroups.map((g) => (
+        <div key={g.name} style={{ marginBottom: 14 }}>
+          <div className="pd-colhead">{g.name}</div>
+          {g.items.map((it, i) => <div className="pd-ck" key={i}><span className="pd-ckq">{it.qty ? "×" + it.qty : ""}</span><span>{it.item} <span style={{ color: "#000" }}>— {it.src}</span></span></div>)}
+        </div>
+      ))}
+      {hgExtras.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div className="pd-colhead">Extras</div>
+          {hgExtras.map((x) => <div className="pd-ck" key={x.id}><span className="pd-ckq">{x.qty ? "×" + x.qty : ""}</span><span>{x.name}</span></div>)}
+        </div>
+      )}
+      <PdfFoot />
+    </div>
+  );
+
+  const PdfLoad = () => (
+    <div className="pd-section">
+      <PdfHeader section="Load List" />
+      {finalLoad.map((it) => <div className="pd-ck" key={it.id}><span className="pd-ckq">{it.qty ? "×" + it.qty : ""}</span><span>{it.label} <span style={{ color: "#000" }}>— {it.src}</span></span></div>)}
+      <PdfFoot />
+    </div>
+  );
+
+  const PdfContacts = () => {
+    const list = contacts.filter((c) => (c.name.trim() || c.phone.trim() || c.email.trim()) && c.includeInPdf !== false);
+    return (
+      <div className="pd-section">
+        <PdfHeader section="Team Sheet" />
+        {list.map((c) => (
+          <div className="pd-contact" key={c.id}>
+            <div style={{ fontWeight: 700, fontSize: 17 }}>{c.name || "[Name needed]"} {c.contactType ? <span style={{ fontWeight: 400, color: "#000", fontSize: 13, textTransform: "uppercase", letterSpacing: ".06em" }}> · {c.contactType}</span> : null}</div>
+            {c.role && <div style={{ fontStyle: "italic", fontSize: 16, color: "#000" }}>{c.role}{c.businessName ? " · " + c.businessName : ""}</div>}
+            <div className="pd-cgrid">{c.phone && <div>{c.phone}</div>}{c.email && <div>{c.email}</div>}</div>
+            {c.notes && <div style={{ fontSize: 16, color: "#000", marginTop: 5 }}>{c.notes}</div>}
+          </div>
+        ))}
+        <div className="pd-sign"><div>Designer</div><div>Lead Florist</div><div>Day-Of Coordinator</div></div>
+        <PdfFoot />
+      </div>
+    );
+  };
+
+  const PdfSchedule = () => {
+    const pdfBlock = (label, b) => b ? (
+      <div style={{ marginBottom: 10 }}>
+        <div className="pd-colhead">{label}</div>
+        <div style={{ fontSize: 16, lineHeight: 1.6 }}>
+          <div><b>Location </b>{fv(b.location, "needs confirmation")}</div>
+          <div><b>Staff </b>{fv(b.staff, "needs confirmation")}</div>
+          <div><b>Items </b>{fv(b.items, "needs confirmation")}</div>
+        </div>
+      </div>
+    ) : null;
+    const pdfDay = (day, label) => (
+      <div key={day.id} style={{ marginBottom: 22, pageBreakInside: "avoid" }}>
+        <div className="pd-coltitle">{label}{day.date ? " — " + fmtDateLong(day.date) : ""}</div>
+        {pdfBlock("Cargo Load-In", day.cargoLoadIn)}
+        <div className="pd-colhead">Timeline</div>
+        <div className="pd-sched-row head"><span>Time</span><span>Location</span><span>Task / Activity</span><span>{"Group : Names"}</span></div>
+        {day.rows.filter((r) => r.time.trim() || r.location.trim() || r.task.trim() || r.staff.trim()).map((r, i) => (
+          <div className="pd-sched-row" key={i}><span>{r.time || "—"}</span><span>{r.location || "—"}</span><span>{r.task || "—"}</span><span>{r.staff.trim() ? `${r.groupLabel || "Staff"}: ${r.staff}` : "—"}</span></div>
+        ))}
+        {(day.objectives || []).some((o) => o.trim()) && (
+          <div style={{ marginTop: 10 }}>
+            <div className="pd-colhead">Design Day Objectives</div>
+            {day.objectives.filter((o) => o.trim()).map((o, i) => <div className="pd-ck" key={i}><span>{"— " + o}</span></div>)}
+          </div>
+        )}
+        {pdfBlock("Cargo Load-Out", day.cargoLoadOut)}
+        {pdfBlock("Dismantling", day.dismantling)}
+      </div>
+    );
+    const contactGroup = (label, list) => list.length > 0 && (
+      <div style={{ marginBottom: 8 }}>
+        <span className="pd-colhead" style={{ marginRight: 8 }}>{label}</span>
+        <span style={{ fontSize: 16 }}>{list.map((c, i) => `${c.name}${c.role ? " — " + c.role : ""}${c.phone ? " · " + c.phone : ""}`).join("   |   ")}</span>
+      </div>
+    );
+    return (
+      <div className="pd-section">
+        <PdfHeader section="Event Timeline" />
+        {showTimelineContacts && (
+          <div style={{ marginBottom: 12 }}>
+            <div className="pd-colhead" style={{ marginTop: 6 }}>Staff, Venue &amp; Vendor Contacts</div>
+            {contactGroup("Staff", contacts.filter((c) => c.contactType === "staff" && c.name.trim() && c.includeInPdf !== false))}
+            {contactGroup("Venue", contacts.filter((c) => c.contactType === "venue" && c.name.trim() && c.includeInPdf !== false))}
+            {contactGroup("Vendor", contacts.filter((c) => c.contactType === "vendor" && c.name.trim() && c.includeInPdf !== false))}
+          </div>
+        )}
+        <div className="pd-coltitle" style={{ marginTop: 18 }}>Pre-Event</div>
+        {preEventDays.map((day, di) => pdfDay(day, `Pre-Event — Day ${di + 1}`))}
+        <div className="pd-coltitle">Event Day</div>
+        {pdfDay(eventDay[0], "Event Day")}
+        <div className="pd-coltitle">Post-Event</div>
+        {postEventDays.map((day, di) => pdfDay(day, `Post-Event — Day ${di + 1}`))}
+        <div className="pd-colhead">Notes / TBD</div>
+        <div style={{ fontSize: 16, whiteSpace: "pre-wrap", marginBottom: 22, minHeight: 36 }}>{scheduleNotes.trim() || "—"}</div>
+        <div className="pd-colhead">Floorplans</div>
+        {(floorplans.filter((f) => f.label.trim()).length ? floorplans.filter((f) => f.label.trim()) : [{ id: "blank", label: "[Floorplan]" }]).map((f) => (
+          <div key={f.id} className="pd-fp-box"><div className="pd-fp-label">{f.label}</div></div>
+        ))}
+        <PdfFoot />
+      </div>
+    );
+  };
+
+  const PRINT_MAP = { production: PdfProduction, master: PdfMaster, order: PdfOrder, hardgoods: PdfHardGoods, load: PdfLoad, contacts: PdfContacts, schedule: PdfSchedule };
+  const printDoc = pdfScope && (
+    <div className="pv">
+      <div className="pv-bar">
+        <a className="pv-btn" href="#" onClick={(e) => { e.preventDefault(); doExportPdf(); }}>Open PDF + Drive</a>
+        <button className="pv-btn ghost" onClick={doPrint}>Print</button>
+        <button className="pv-btn ghost" onClick={() => setPdfScope(null)}>✕ Close</button>
+        <span className="pv-hint">Opens the PDF in one tab and Google Drive in another.</span>
+      </div>
+      <div className="pd" ref={pdRef}>
+        {pdfScope === "all" ? (
+          <>
+            <PdfProduction /><PdfMaster /><PdfOrder /><PdfHardGoods /><PdfLoad /><PdfSchedule /><PdfContacts />
+          </>
+        ) : (
+          (() => { const ScopeComp = PRINT_MAP[pdfScope]; return ScopeComp ? <ScopeComp /> : null; })()
+        )}
+      </div>
+    </div>
+  );
+
+  const resetModal = showReset && (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowReset(false); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">Delete This Event?</div>
+        <div className="modal-body">This permanently removes "{info.client || info.venue || "this event"}" — all its arrangements, stems, contacts, schedule, and photos. Your other saved events, Library names, and saved defaults stay put.</div>
+        <div className="modal-actions">
+          <button className="btn btn-red" style={{ width: "100%", justifyContent: "center" }} onClick={doDeleteEvent}>Delete event</button>
+          <button className="btn btn-grey" style={{ width: "100%", justifyContent: "center" }} onClick={() => setShowReset(false)}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const resetAllModal = showResetAll && (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowResetAll(false); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">Reset All Data?</div>
+        <div className="modal-body">
+          This permanently deletes every saved event ({events.length} total), all photos, your saved defaults, and your Library of autofill names. This cannot be undone. Consider downloading a backup of any event you want to keep first.
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-red" style={{ width: "100%", justifyContent: "center" }} onClick={doResetAllData}>Reset everything</button>
+          <button className="btn btn-grey" style={{ width: "100%", justifyContent: "center" }} onClick={() => setShowResetAll(false)}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const switchConfirmModal = showSwitchConfirm && (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowSwitchConfirm(false); setPendingSwitchId(null); } }}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">Unsaved Changes</div>
+        <div className="modal-body">
+          "{info.client || info.venue || "This event"}" has changes that haven't been saved yet. {pendingSwitchId === "__new__" ? "Starting a new event now" : "Switching events now"} will lose them unless you save first.
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-ink" style={{ width: "100%", justifyContent: "center" }} onClick={confirmSwitchSaveFirst}>Save &amp; continue</button>
+          <button className="btn btn-red" style={{ width: "100%", justifyContent: "center" }} onClick={confirmSwitchDiscard}>Discard changes</button>
+          <button className="btn btn-grey" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setShowSwitchConfirm(false); setPendingSwitchId(null); }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const fileRestoreModal = showFileRestoreConfirm && (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowFileRestoreConfirm(false); setFileRestoreData(null); } }}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">Restore From This File?</div>
+        <div className="modal-body">
+          This replaces everything currently on screen for "{info.client || info.venue || "this event"}" with the contents of the uploaded file
+          {fileRestoreData && fileRestoreData._savedAt ? ` (saved ${new Date(fileRestoreData._savedAt).toLocaleString()})` : ""}. Use Save afterward to keep it.
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-red" style={{ width: "100%", justifyContent: "center" }} onClick={confirmFileRestore}>Restore &amp; overwrite</button>
+          <button className="btn btn-grey" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setShowFileRestoreConfirm(false); setFileRestoreData(null); }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const aiPreviewModal = showAiPreview && aiPreview && (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowAiPreview(false); setAiPreview(null); } }}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">AI Autofill Results</div>
+        <div className="modal-body">
+          Here's what Claude found in your notes. Applying will add these — it won't overwrite anything already filled in.
+        </div>
+        <div style={{ maxHeight: 300, overflowY: "auto", marginBottom: 20, borderTop: "1px solid var(--border-light)", fontSize: 13 }}>
+          {Object.keys(aiPreview.info || {}).filter((k) => aiPreview.info[k]).length > 0 && (
+            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>Event Info</div>
+              {Object.keys(aiPreview.info).filter((k) => aiPreview.info[k]).map((k) => <div key={k}>{AUTOFILL_FIELD_LABELS[k] || k}: {aiPreview.info[k]}</div>)}
+            </div>
+          )}
+          {aiPreview.contacts.length > 0 && (
+            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.contacts.length} Contact{aiPreview.contacts.length === 1 ? "" : "s"}</div>
+              {aiPreview.contacts.map((c, i) => <div key={i}>{c.name}{c.role ? ` — ${c.role}` : ""}</div>)}
+            </div>
+          )}
+          {aiPreview.vendors.length > 0 && (
+            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.vendors.length} Vendor{aiPreview.vendors.length === 1 ? "" : "s"}</div>
+              {aiPreview.vendors.map((v, i) => <div key={i}>{v.name}{v.category ? ` — ${v.category}` : ""}</div>)}
+            </div>
+          )}
+          {aiPreview.collections.length > 0 && (
+            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.collections.length} Collection{aiPreview.collections.length === 1 ? "" : "s"}</div>
+              {aiPreview.collections.map((c, i) => <div key={i}>{c.name} ({(c.pieces || []).length} piece{(c.pieces || []).length === 1 ? "" : "s"})</div>)}
+            </div>
+          )}
+          {aiPreview.days.length > 0 && (
+            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.days.length} Schedule Day{aiPreview.days.length === 1 ? "" : "s"}</div>
+              {aiPreview.days.map((d, i) => <div key={i}>{d.date || d.label || `Day ${i + 1}`} — {(d.rows || []).length} row{(d.rows || []).length === 1 ? "" : "s"}</div>)}
+            </div>
+          )}
+          {aiPreview.hgExtras.length > 0 && (
+            <div style={{ padding: "10px 0" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.hgExtras.length} Rental Item{aiPreview.hgExtras.length === 1 ? "" : "s"}</div>
+              {aiPreview.hgExtras.map((h, i) => <div key={i}>{h.name}{h.qty ? ` — ${h.qty}` : ""}</div>)}
+            </div>
+          )}
+          {!Object.keys(aiPreview.info || {}).some((k) => aiPreview.info[k]) && !aiPreview.contacts.length && !aiPreview.vendors.length && !aiPreview.collections.length && !aiPreview.days.length && !aiPreview.hgExtras.length && (
+            <div style={{ padding: "14px 0", fontStyle: "italic", color: "var(--muted-fg)" }}>Nothing recognizable was found in that text.</div>
+          )}
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-ink" style={{ width: "100%", justifyContent: "center" }} onClick={applyAiAutofill}>Apply to Event</button>
+          <button className="btn btn-grey" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setShowAiPreview(false); setAiPreview(null); }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const autofillModal = showAutofillConfirm && autofillPreview && (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowAutofillConfirm(false); setAutofillPreview(null); } }}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-title">Autofill From File?</div>
+        <div className="modal-body">
+          {autofillPreview.infoFields.length === 0
+            ? "Couldn't find any recognizable fields in that file. Try one field per line, like \"Venue, The Sycamore Room\"."
+            : `Found ${autofillPreview.infoFields.length} field${autofillPreview.infoFields.length === 1 ? "" : "s"} for "${info.client || info.venue || "this event"}". Uncheck anything you don't want filled in.`}
+        </div>
+        {autofillPreview.infoFields.length > 0 && (
+          <div style={{ maxHeight: 260, overflowY: "auto", marginBottom: 22, borderTop: "1px solid var(--border-light)" }}>
+            {autofillPreview.infoFields.map((f, i) => (
+              <label key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--border-light)", fontSize: 13, cursor: "pointer" }}>
+                <input type="checkbox" checked={f.included} onChange={() => toggleAutofillField(i)} />
+                <span style={{ flex: 1 }}>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", display: "block", marginBottom: 2 }}>{f.label}</span>
+                  <span>{f.tbd ? "TBD" : (f.value || f.rawValue)}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+        {autofillPreview.unmatched.length > 0 && (
+          <div style={{ fontSize: 11, color: "var(--muted-fg)", marginBottom: 20, lineHeight: 1.6 }}>
+            Not used: {autofillPreview.unmatched.map((u) => u.key).join(", ")}
+          </div>
+        )}
+        <div className="modal-actions">
+          {autofillPreview.infoFields.length > 0 && (
+            <button className="btn btn-ink" style={{ width: "100%", justifyContent: "center" }} disabled={!autofillPreview.infoFields.some((f) => f.included)} onClick={confirmAutofill}>
+              Fill in {autofillPreview.infoFields.filter((f) => f.included).length} field{autofillPreview.infoFields.filter((f) => f.included).length === 1 ? "" : "s"}
+            </button>
+          )}
+          <button className="btn btn-grey" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setShowAutofillConfirm(false); setAutofillPreview(null); }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="epswrap">
+        <div className="app-ui">
+          <div className="root">
+            <div className="masthead">
+              <div>
+                <div className="mast-eyebrow">Erin Mcdonald Co.</div>
+                <h1 className="mast-title">{info.client || "Event Production"}</h1>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {isDirty && <span className="badge" style={{ background: "var(--orange)" }}>Unsaved changes</span>}
+                  <button className="btn btn-ink btn-xs" onClick={handleManualSave} disabled={saveState === "Saving…" || !currentEventId}>Save</button>
+                </div>
+                <div className="mast-save">{saveState}</div>
+              </div>
+            </div>
+            <div className="rail">
+              {PAGES.map((p, i) => (
+                <button key={p} className={`rail-tab ${page === i ? "active" : ""}`} onClick={() => setPage(i)}>{p}</button>
+              ))}
+            </div>
+            {page === 0 && renderQuickLinks()}
+            {page === 1 && renderEventInfo()}
+            {page === 2 && renderContacts()}
+            {page === 3 && renderBuild()}
+            {page === 4 && renderProduction()}
+            {page === 5 && renderMaster()}
+            {page === 6 && renderHardGoods()}
+            {page === 7 && renderLoad()}
+            {page === 8 && renderContactSheet()}
+            {page === 9 && renderSchedule()}
+            {page === 10 && renderIndex()}
+            {page === 11 && renderVendors()}
+            {page >= 1 && page <= 3 && (
+              <div className="sticky">
+                <button className="btn btn-line" onClick={() => setPage((p) => p - 1)}>← Back</button>
+                <button className="btn btn-grey" onClick={() => setPage(0)}>Home</button>
+                {page < 3 ? <button className="btn btn-ink" onClick={() => setPage((p) => p + 1)}>Next →</button> : null}
+              </div>
+            )}
+          </div>
+          <div className="app-footer">Erin Mcdonald Co.</div>
+        </div>
+        {printDoc}
+        {resetModal}
+        {resetAllModal}
+        {switchConfirmModal}
+        {fileRestoreModal}
+        {autofillModal}
+        {aiPreviewModal}
+      </div>
+    </>
+  );
+}
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<EventProductionSheet />);
+  </script>
+</body>
+</html>
