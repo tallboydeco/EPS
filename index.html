@@ -436,29 +436,172 @@ function newEventEntry(label = "Untitled Event") {
   return { id: uid(), label, eventDate: "", updatedAt: Date.now() };
 }
 
-/* ── AI Autofill (paste free-text notes, parsed by Claude) ── */
-const AI_AUTOFILL_SYSTEM = `You extract structured event-production data from messy, informal notes for a floral & event design studio (handwritten meeting notes, texted lists, emails, order confirmations, etc). Return ONLY raw JSON — no markdown fences, no commentary — matching exactly this shape:
-{
-  "info": {"client":"","event_date":"","venue":"","venue_address":"","venue_city":"","venue_state":"","venue_zip":""},
-  "contacts": [{"name":"","contactType":"staff|venue|vendor","role":"","businessName":"","phone":"","email":"","notes":""}],
-  "vendors": [{"name":"","category":"","contactName":"","phone":"","email":"","notes":""}],
-  "collections": [{"name":"","pieces":[{"name":"","qty":"1","pullMode":"per","stems":[{"name":"","qty":"1","unit":"stems|bunches|blooms"}]}]}],
-  "days": [{"date":"","label":"","rows":[{"time":"","location":"","task":"","groupLabel":"","staff":""}],"objectives":[""]}],
-  "hgExtras": [{"name":"","qty":""}]
-}
-Rules: event_date and days[].date must be ISO YYYY-MM-DD if a year can be inferred, else leave "". "pullMode":"per" means the stem quantities given are PER PIECE (piece qty is the count of pieces, e.g. "2 arrangements, 20 roses each"); use "total" only if the quantities given are already a combined total for all pieces together. Only include sections/fields actually present in the source text — use empty arrays/strings rather than inventing data. Do not fabricate names, numbers, or dates.`;
+/* ── Native Smart Autofill (local, rule-based — no external API, no cost) ──
+   Detects contacts, flowers, hard goods, venues, businesses, and event info
+   from pasted free-text using pattern matching against known terms already
+   in the Library plus common floral/event vocabulary. Anything it isn't
+   confident about is left in "unmatched" for manual review rather than
+   guessed — same principle the old AI prompt followed. ── */
 
-const LIBRARY_AUTOFILL_SYSTEM = `You extract reusable reference information from notes for a floral & event design studio, to save into their saved-names library and contact list — not into any specific event. Return ONLY raw JSON — no markdown fences, no commentary — matching exactly this shape:
-{
-  "contacts": [{"name":"","contactType":"staff|venue|vendor","role":"","businessName":"","phone":"","email":"","notes":""}],
-  "flowers": [""],
-  "hardGoods": [""],
-  "businesses": [""],
-  "venues": [""],
-  "clients": [""],
-  "roles": [""]
+const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/;
+const PHONE_RE = /(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/;
+const KNOWN_STAFF_FIRST_NAMES = new Set(["erin", "donna", "lindsay", "joyce", "lynne", "doug", "cisco", "kidane", "emily", "pam", "sam", "nathan", "bill"]);
+
+const COMMON_FLOWER_WORDS = [
+  "rose", "roses", "garden rose", "spray rose", "hydrangea", "ranunculus", "peony", "peonies", "dahlia",
+  "anemone", "lisianthus", "tulip", "orchid", "calla", "protea", "eucalyptus", "greenery", "fern", "ruscus",
+  "ivy", "olive branch", "amaranthus", "sweet pea", "stock", "carnation", "chrysanthemum", "mum", "zinnia",
+  "cosmos", "delphinium", "larkspur", "snapdragon", "freesia", "gardenia", "jasmine", "lily", "magnolia",
+  "queen anne", "astilbe", "scabiosa", "bunny tail", "pampas", "baby's breath", "wax flower", "thistle",
+  "privet", "smilax", "seeded eucalyptus", "italian ruscus", "leather leaf", "bay leaf", "myrtle",
+];
+const COMMON_HARDGOOD_WORDS = [
+  "vase", "vessel", "compote", "urn", "riser", "candle", "votive", "taper", "candlestick", "arch", "arbor",
+  "chicken wire", "floral foam", "oasis", "pin frog", "floral tape", "wire", "ribbon", "chargers", "linens",
+  "table number", "menu card", "easel", "stand", "pedestal", "lantern", "hurricane", "column", "plinth",
+  "mechanics", "frog", "cage", "cellophane", "twine",
+];
+const VENUE_WORDS = ["barn", "manor", "estate", "hotel", "club", "gardens", "hall", "winery", "vineyard", "chateau", "inn", "lodge", "resort", "farm", "chapel", "ballroom", "pavilion", "midtown", "loft"];
+const BUSINESS_WORDS = ["rentals", "events", "catering", "photography", "photo", "films", "florals", "florist", "design", "studio", "co.", "llc", "inc", "productions", "planning", "coordination", "bakery", "cakes", "dj ", "entertainment", "linens", "tents", "lighting"];
+
+function guessContactType(name, line) {
+  const l = line.toLowerCase();
+  const first = (name || "").split(" ")[0].toLowerCase();
+  if (KNOWN_STAFF_FIRST_NAMES.has(first)) return "staff";
+  if (/venue|coordinator|manager/.test(l)) return "venue";
+  if (/vendor|rental|catering|photo|dj|band|officiant|planner|florist|baker/.test(l)) return "vendor";
+  return "";
 }
-"flowers" is fresh/floral ingredient names (roses, hydrangea, eucalyptus, etc). "hardGoods" is vessels, mechanics, candles, and other reusable hard-good item names. "businesses" is vendor/company names. Contacts should include whatever fields are actually available — a person may only have a phone number, or only an email, that's fine, leave the rest blank rather than guessing. Only include people/terms actually present in the source text or visible in the image. Do not fabricate names, numbers, or contact info.`;
+
+function looksLikeName(s) {
+  return /^[A-Z][a-zA-Z'.-]*(\s+[A-Z][a-zA-Z'.-]*){0,3}$/.test(s.trim());
+}
+
+function splitLoose(line) {
+  return line.split(/\s*[-–|]\s*|,\s+(?=[A-Z(])/).map((s) => s.trim()).filter(Boolean);
+}
+
+function stripBullet(line) {
+  return line.replace(/^[-*•\u2022]+\s*/, "").replace(/^\d+[.)]\s*/, "").trim();
+}
+
+function parseContactLine(clean) {
+  const email = clean.match(EMAIL_RE);
+  const phone = clean.match(PHONE_RE);
+  const parts = splitLoose(clean);
+  const nonContactParts = parts.filter((p) => !EMAIL_RE.test(p) && !PHONE_RE.test(p));
+  const name = nonContactParts.find((p) => looksLikeName(p)) || nonContactParts[0] || clean.split(/[,-]/)[0].trim();
+  const role = nonContactParts.find((p) => p !== name) || "";
+  return {
+    name: name || "", role, businessName: "", phone: phone ? phone[0] : "", email: email ? email[0] : "",
+    notes: "", contactType: guessContactType(name, clean),
+  };
+}
+
+function classifyLibraryTerm(term, known, buckets) {
+  const t = term.toLowerCase().trim();
+  if (!t) return;
+  if (known.flowers.has(t) || COMMON_FLOWER_WORDS.some((w) => t.includes(w))) { buckets.flowers.add(term.trim()); return; }
+  if (known.hardGoods.has(t) || COMMON_HARDGOOD_WORDS.some((w) => t.includes(w))) { buckets.hardGoods.add(term.trim()); return; }
+  if (known.venues.has(t) || VENUE_WORDS.some((w) => t.includes(w))) { buckets.venues.add(term.trim()); return; }
+  if (known.businesses.has(t) || BUSINESS_WORDS.some((w) => t.includes(w))) { buckets.businesses.add(term.trim()); return; }
+  if (known.clients.has(t)) { buckets.clients.add(term.trim()); return; }
+  if (/^[A-Z][a-z]+(\s(&|and)\s[A-Z][a-z]+)?$/.test(term.trim())) { buckets.clients.add(term.trim()); return; }
+  buckets.unmatched.push(term.trim());
+}
+
+function parseLibrarySmart(text, library) {
+  const known = {
+    flowers: new Set((library.flowers || []).map((s) => s.toLowerCase())),
+    hardGoods: new Set((library.components || []).map((s) => s.toLowerCase())),
+    venues: new Set((library.venues || []).map((s) => s.toLowerCase())),
+    businesses: new Set((library.businesses || []).map((s) => s.toLowerCase())),
+    clients: new Set((library.clients || []).map((s) => s.toLowerCase())),
+  };
+  const buckets = { flowers: new Set(), hardGoods: new Set(), venues: new Set(), businesses: new Set(), clients: new Set(), unmatched: [] };
+  const contacts = [];
+  const lines = String(text || "").split(/\r?\n/).map(stripBullet).filter(Boolean);
+
+  lines.forEach((line) => {
+    if (EMAIL_RE.test(line) || PHONE_RE.test(line)) { contacts.push(parseContactLine(line)); return; }
+    if (line.includes(",") && !line.includes(":") && line.split(",").length >= 2) {
+      line.split(",").forEach((item) => classifyLibraryTerm(item, known, buckets));
+      return;
+    }
+    const idx = line.indexOf(":");
+    if (idx > -1) {
+      const val = line.slice(idx + 1).trim();
+      if (val.includes(",")) { val.split(",").forEach((item) => classifyLibraryTerm(item, known, buckets)); return; }
+      classifyLibraryTerm(val || line.slice(0, idx), known, buckets);
+      return;
+    }
+    classifyLibraryTerm(line, known, buckets);
+  });
+
+  return {
+    mode: "library", contacts,
+    flowers: [...buckets.flowers], hardGoods: [...buckets.hardGoods], businesses: [...buckets.businesses],
+    venues: [...buckets.venues], clients: [...buckets.clients], roles: [], unmatched: buckets.unmatched,
+  };
+}
+
+function parseGeneralSmart(text) {
+  const lines = String(text || "").split(/\r?\n/).map(stripBullet).filter(Boolean);
+  const info = {};
+  const contacts = [];
+  const hgExtras = [];
+  const unmatched = [];
+  let section = null; // "hardgoods" | null — simple section tracking for qty lines
+
+  lines.forEach((line, i) => {
+    // key: value info fields (client, event_date, venue, address, setup, strike, planner, designer...)
+    const idx = line.indexOf(":");
+    if (idx > -1) {
+      const rawKey = line.slice(0, idx);
+      const rawVal = line.slice(idx + 1).trim();
+      const field = AUTOFILL_ALIAS_MAP[normKey(rawKey)];
+      if (field && rawVal) {
+        info[field] = field === "event_date" ? (autofillToISODate(rawVal) || rawVal) : rawVal;
+        return;
+      }
+      if (/^(rentals?|hard ?goods?)$/i.test(rawKey.trim())) { section = "hardgoods"; if (rawVal) hgExtras.push({ name: rawVal, qty: "" }); return; }
+      if (/^(contacts?|vendors?)$/i.test(rawKey.trim())) { section = "contacts"; return; }
+    }
+
+    if (EMAIL_RE.test(line) || PHONE_RE.test(line)) { contacts.push(parseContactLine(line)); return; }
+
+    // First un-keyed line with two capitalized names joined by & / and → client, if not already set
+    if (!info.client && /^[A-Z][a-z]+\s*(&|and)\s*[A-Z][a-z]+/.test(line)) {
+      const m = line.match(/^([A-Z][a-z]+\s*(?:&|and)\s*[A-Z][a-z]+)/);
+      if (m) { info.client = m[1].replace(/\s+/g, " "); }
+    }
+
+    // "at <Venue Name>" pattern
+    if (!info.venue) {
+      const atMatch = line.match(/\bat\s+([A-Z][A-Za-z0-9'&.\s]{2,50})(?:[.,]|$)/);
+      if (atMatch && VENUE_WORDS.some((w) => atMatch[1].toLowerCase().includes(w))) info.venue = atMatch[1].trim();
+    }
+
+    // bare date somewhere in text
+    if (!info.event_date) {
+      const dm = line.match(/\b(\d{1,2}\/\d{1,2}\/\d{2,4}|\b[A-Z][a-z]+ \d{1,2},? \d{4})\b/);
+      if (dm) { const iso = autofillToISODate(dm[1]); if (iso) info.event_date = iso; }
+    }
+
+    // qty + item under a "rentals/hard goods" section, or lines like "6x chargers" / "10 votives"
+    const qtyMatch = line.match(/^(\d+)\s*[xX]?\s+(.+)$/);
+    if (qtyMatch && (section === "hardgoods" || COMMON_HARDGOOD_WORDS.some((w) => line.toLowerCase().includes(w)))) {
+      hgExtras.push({ name: qtyMatch[2].trim(), qty: qtyMatch[1] });
+      return;
+    }
+
+    if (section === "contacts" && looksLikeName(line.split(/[-–|,]/)[0].trim())) { contacts.push(parseContactLine(line)); return; }
+
+    unmatched.push(line);
+  });
+
+  return { mode: "general", info, contacts, vendors: [], collections: [], days: [], hgExtras, unmatched };
+}
 
 /* ── Autofill (CSV / text drag-and-drop) ── */
 const AUTOFILL_FIELD_LABELS = {
@@ -629,6 +772,10 @@ const DEFAULT_RECURRING_INFO_FIELDS = ["planner_name", "designer_name"];
    since this only installs when window.storage isn't already present. ── */
 (function installStorageShim() {
   if (typeof window === "undefined" || window.storage) return;
+  if (typeof indexedDB === "undefined") {
+    console.error("IndexedDB is unavailable in this browser context (private/incognito mode often blocks it) — saving will not work.");
+    return;
+  }
   const DB_NAME = "eps_storage";
   const STORE = "kv";
   let dbPromise = null;
@@ -702,21 +849,22 @@ async function waitForStorage(maxWaitMs = 4000, intervalMs = 100) {
   }
   return true;
 }
+let lastStorageError = null;
 async function lsGet(key) {
   try { const r = await window.storage.get(key, false); return r; }
-  catch (e) { return null; }
+  catch (e) { lastStorageError = e; return null; }
 }
 async function lsSet(key, value) {
-  try { const r = await window.storage.set(key, value, false); return r; }
-  catch (e) { return null; }
+  try { const r = await window.storage.set(key, value, false); lastStorageError = null; return r; }
+  catch (e) { lastStorageError = e; console.error("Storage set failed for key", key, e); return null; }
 }
 async function lsDelete(key) {
   try { const r = await window.storage.delete(key, false); return r; }
-  catch (e) { return null; }
+  catch (e) { lastStorageError = e; return null; }
 }
 async function lsList(prefix) {
   try { const r = await window.storage.list(prefix, false); return r; }
-  catch (e) { return null; }
+  catch (e) { lastStorageError = e; return null; }
 }
 
 const EVENT_PREFIX = "event:";
@@ -978,7 +1126,6 @@ function EventProductionSheet() {
   const [autofillPreview, setAutofillPreview] = useState(null);
   const [showAutofillConfirm, setShowAutofillConfirm] = useState(false);
   const [aiText, setAiText] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiPreview, setAiPreview] = useState(null);
   const [showAiPreview, setShowAiPreview] = useState(false);
@@ -1065,11 +1212,22 @@ function EventProductionSheet() {
     setSaveState("Saving…");
     const core = buildEventCore();
     const coreJSON = JSON.stringify(core);
-    if (!hasStorage()) { setSaveState("Error — try again"); return false; }
+    if (typeof indexedDB === "undefined" && !(typeof window !== "undefined" && window.storage)) {
+      setSaveState("Can't save — this browser is blocking local storage (try disabling private/incognito mode)");
+      return false;
+    }
+    if (!hasStorage()) { setSaveState("Error — storage not ready, try again in a moment"); return false; }
     try {
       const payload = { ...core, _savedAt: Date.now() };
       const res = await queueWrite(() => lsSet(`${EVENT_PREFIX}${id}`, JSON.stringify(payload)));
-      if (!res) throw new Error("save failed");
+      if (!res) {
+        const err = lastStorageError;
+        console.error("Save failed for event", id, err);
+        const name = err && (err.name || err.message);
+        if (name === "QuotaExceededError") setSaveState("Error — storage is full (try removing large images)");
+        else setSaveState(name ? `Error — ${name}` : "Error — try again");
+        return false;
+      }
       lastSavedCoreRef.current = coreJSON;
       const label = (payload.info && (payload.info.client || payload.info.venue)) || "Untitled Event";
       setEvents((prev) => {
@@ -1079,7 +1237,11 @@ function EventProductionSheet() {
       lsSet(ACTIVE_KEY, id);
       setSaveState(`Saved · ${new Date(payload._savedAt).toLocaleTimeString()}`);
       return true;
-    } catch (e) { setSaveState("Error — try again"); return false; }
+    } catch (e) {
+      console.error("Save threw", e);
+      setSaveState(e && e.message ? `Error — ${e.message}` : "Error — try again");
+      return false;
+    }
   };
   const handleManualSave = () => { if (!currentEventId) return; clearTimeout(saveTimer.current); saveCurrentEvent(currentEventId); };
 
@@ -1412,88 +1574,20 @@ function EventProductionSheet() {
     setFileRestoreData(null);
   };
 
-  const runAiAutofill = async (mode = "general") => {
+  const runAiAutofill = (mode = "general") => {
     const text = aiText.trim();
     if (!text) return;
-    setAiLoading(true); setAiError(""); setAiPreview(null);
-    try {
-      const resp = await fetch("/api/autofill", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 8000,
-          system: mode === "library" ? LIBRARY_AUTOFILL_SYSTEM : AI_AUTOFILL_SYSTEM,
-          messages: [{ role: "user", content: text }],
-        }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) {
-        const msg = (data && data.error && data.error.message) || `HTTP ${resp.status}`;
-        console.error("AI Autofill: API error", resp.status, data);
-        throw new Error("api:" + msg);
-      }
-      const textBlocks = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
-      if (!textBlocks.trim()) {
-        console.error("AI Autofill: empty response", data);
-        throw new Error("empty");
-      }
-      const clean = textBlocks.replace(/```json|```/g, "").trim();
-      let parsed;
-      try {
-        parsed = JSON.parse(clean);
-      } catch (parseErr) {
-        // Fall back to extracting the outermost {...} in case of stray preamble/truncation
-        const first = clean.indexOf("{");
-        const last = clean.lastIndexOf("}");
-        if (first === -1 || last === -1 || last <= first) {
-          console.error("AI Autofill: no JSON object found", clean);
-          throw new Error("noJson");
-        }
-        try {
-          parsed = JSON.parse(clean.slice(first, last + 1));
-        } catch (parseErr2) {
-          console.error("AI Autofill: unparseable JSON", data.stop_reason, clean);
-          throw new Error(data.stop_reason === "max_tokens" ? "truncated" : "badJson");
-        }
-      }
-      const norm = mode === "library" ? {
-        mode: "library",
-        contacts: Array.isArray(parsed && parsed.contacts) ? parsed.contacts : [],
-        flowers: Array.isArray(parsed && parsed.flowers) ? parsed.flowers : [],
-        hardGoods: Array.isArray(parsed && parsed.hardGoods) ? parsed.hardGoods : [],
-        businesses: Array.isArray(parsed && parsed.businesses) ? parsed.businesses : [],
-        venues: Array.isArray(parsed && parsed.venues) ? parsed.venues : [],
-        clients: Array.isArray(parsed && parsed.clients) ? parsed.clients : [],
-        roles: Array.isArray(parsed && parsed.roles) ? parsed.roles : [],
-      } : {
-        mode: "general",
-        info: parsed && typeof parsed.info === "object" && parsed.info ? parsed.info : {},
-        contacts: Array.isArray(parsed && parsed.contacts) ? parsed.contacts : [],
-        vendors: Array.isArray(parsed && parsed.vendors) ? parsed.vendors : [],
-        collections: Array.isArray(parsed && parsed.collections) ? parsed.collections : [],
-        days: Array.isArray(parsed && parsed.days) ? parsed.days : [],
-        hgExtras: Array.isArray(parsed && parsed.hgExtras) ? parsed.hgExtras : [],
-      };
-      setAiPreview(norm);
-      setShowAiPreview(true);
-    } catch (e) {
-      const m = e && e.message ? String(e.message) : "";
-      if (m === "truncated") {
-        setAiError("That was too long for one pass — try pasting it in two smaller batches.");
-      } else if (m.startsWith("api:")) {
-        setAiError("API error: " + m.slice(4));
-      } else if (m === "empty") {
-        setAiError("Got an empty response. Check your connection and try again.");
-      } else if (m === "Failed to fetch" || e instanceof TypeError) {
-        setAiError("Couldn't reach the AI service. Check your connection and try again.");
-      } else {
-        setAiError("Couldn't parse that. Try simplifying the text, or check your connection and try again.");
-      }
-      console.error("AI Autofill failed:", e);
-    } finally {
-      setAiLoading(false);
+    setAiError(""); setAiPreview(null);
+    const norm = mode === "library" ? parseLibrarySmart(text, library) : parseGeneralSmart(text);
+    const foundAnything = mode === "library"
+      ? (norm.contacts.length || norm.flowers.length || norm.hardGoods.length || norm.businesses.length || norm.venues.length || norm.clients.length)
+      : (Object.keys(norm.info).length || norm.contacts.length || norm.hgExtras.length);
+    if (!foundAnything) {
+      setAiError("Couldn't identify anything usable in that text — try a simpler list, or one item per line.");
+      return;
     }
+    setAiPreview(norm);
+    setShowAiPreview(true);
   };
 
   const nrmKey = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -1997,10 +2091,10 @@ window.onload = function () {
           ? "Paste raw notes — a vendor's card, a contact list, an order confirmation. Claude saves contacts, flower names, hard good names, and other reusable terms to your Library only, not to any event. Existing contacts are never duplicated — if you already have someone saved with just a phone number and this adds their email, it fills the email in on that same contact rather than creating a second one. Review before saving."
           : "Paste raw notes — client details, a floral recipe, a timeline, vendor or contact info, whatever you've got. Claude sorts it into the right tabs. Nothing gets overwritten and duplicates are skipped automatically. Review before saving."}
       </p>
-      <textarea className="ftextarea ai-widget-textarea" style={{ minHeight: 160 }} value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder={mode === "library" ? 'Paste notes here, e.g.\n"Madeline, linens vendor, madeline@example.com" or a list of flowers you order often' : 'Paste notes here, e.g.\n"Baylee & Tommy, Sterling at Arrowhead, July 4 2026. Ceremony: 2 pieces, 20 playa roses each..."'} />
+      <textarea className="ftextarea ai-widget-textarea" style={{ minHeight: 160 }} value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder={mode === "library" ? "One item per line works best, e.g.\nMadeline - linens vendor - madeline@example.com\nGarden Roses, Ranunculus, Eucalyptus" : "Key: value lines work best, e.g.\nClient: Baylee & Tommy\nVenue: Sterling at Arrowhead\nEvent Date: July 4, 2026\n\nContacts and rental items are also detected — recipes and schedules still need manual entry."} />
       {aiError && <div style={{ fontSize: 12, color: "var(--red, #b3261e)", marginTop: 8 }}>{aiError}</div>}
-      <button className="btn btn-ink" style={{ marginTop: 10 }} disabled={!aiText.trim() || aiLoading} onClick={() => runAiAutofill(mode)}>
-        {aiLoading ? "Reading…" : "Autofill"}
+      <button className="btn btn-ink" style={{ marginTop: 10 }} disabled={!aiText.trim()} onClick={() => runAiAutofill(mode)}>
+        Autofill
       </button>
     </div>
   );
@@ -3334,6 +3428,12 @@ window.onload = function () {
                 <div style={{ padding: "14px 0", fontStyle: "italic", color: "var(--muted-fg)" }}>Nothing recognizable was found in that text.</div>
               )}
             </>
+          )}
+          {(aiPreview.unmatched || []).length > 0 && (
+            <div style={{ padding: "10px 0 0" }}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>Not used — add manually</div>
+              {aiPreview.unmatched.map((u, i) => <div key={i} style={{ color: "var(--muted-fg)" }}>{u}</div>)}
+            </div>
           )}
         </div>
         <div className="modal-actions">
