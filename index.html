@@ -907,8 +907,6 @@ function EventProductionSheet() {
   const [autofillPreview, setAutofillPreview] = useState(null);
   const [showAutofillConfirm, setShowAutofillConfirm] = useState(false);
   const [aiText, setAiText] = useState("");
-  const [aiImage, setAiImage] = useState(null);
-  const aiImageRef = useRef(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiPreview, setAiPreview] = useState(null);
@@ -1345,14 +1343,9 @@ function EventProductionSheet() {
 
   const runAiAutofill = async (mode = "general") => {
     const text = aiText.trim();
-    if (!text && !aiImage) return;
+    if (!text) return;
     setAiLoading(true); setAiError(""); setAiPreview(null);
     try {
-      const contentBlocks = [];
-      if (aiImage) {
-        contentBlocks.push({ type: "image", source: { type: "base64", media_type: aiImage.mediaType, data: aiImage.dataUrl.split(",")[1] || "" } });
-      }
-      contentBlocks.push({ type: "text", text: text || "Extract the relevant details from this image." });
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1360,7 +1353,7 @@ function EventProductionSheet() {
           model: "claude-sonnet-4-6",
           max_tokens: 4000,
           system: mode === "library" ? LIBRARY_AUTOFILL_SYSTEM : AI_AUTOFILL_SYSTEM,
-          messages: [{ role: "user", content: contentBlocks }],
+          messages: [{ role: "user", content: text }],
         }),
       });
       const data = await resp.json();
@@ -1449,7 +1442,6 @@ function EventProductionSheet() {
       setAiPreview(null);
       setShowAiPreview(false);
       setAiText("");
-      setAiImage(null);
       setSaveState("Autofill applied to Library — review to confirm");
       return;
     }
@@ -1570,7 +1562,6 @@ function EventProductionSheet() {
     setAiPreview(null);
     setShowAiPreview(false);
     setAiText("");
-    setAiImage(null);
     setSaveState("Autofill applied — review the tabs to confirm");
   };
 
@@ -1894,28 +1885,12 @@ window.onload = function () {
       </div>
       <p style={{ fontSize: 12, color: "var(--g4)", lineHeight: 1.6, marginBottom: 12 }}>
         {mode === "library"
-          ? "Paste raw notes or upload a photo — a vendor's card, a contact list, an order confirmation. Claude saves contacts, flower names, hard good names, and other reusable terms to your Library only, not to any event. Existing contacts are never duplicated — if you already have someone saved with just a phone number and this adds their email, it fills the email in on that same contact rather than creating a second one. Review before saving."
-          : "Paste raw notes or upload a photo of handwritten notes — client details, a floral recipe, a timeline, vendor or contact info, whatever you've got. Claude sorts it into the right tabs. Nothing gets overwritten and duplicates are skipped automatically. Review before saving."}
+          ? "Paste raw notes — a vendor's card, a contact list, an order confirmation. Claude saves contacts, flower names, hard good names, and other reusable terms to your Library only, not to any event. Existing contacts are never duplicated — if you already have someone saved with just a phone number and this adds their email, it fills the email in on that same contact rather than creating a second one. Review before saving."
+          : "Paste raw notes — client details, a floral recipe, a timeline, vendor or contact info, whatever you've got. Claude sorts it into the right tabs. Nothing gets overwritten and duplicates are skipped automatically. Review before saving."}
       </p>
       <textarea className="ftextarea ai-widget-textarea" style={{ minHeight: 160 }} value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder={mode === "library" ? 'Paste notes here, e.g.\n"Madeline, linens vendor, madeline@example.com" or a list of flowers you order often' : 'Paste notes here, e.g.\n"Baylee & Tommy, Sterling at Arrowhead, July 4 2026. Ceremony: 2 pieces, 20 playa roses each..."'} />
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-        <input ref={aiImageRef} type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
-          const f = e.target.files && e.target.files[0];
-          e.target.value = "";
-          if (!f) return;
-          try { const dataUrl = await rawFileToDataURL(f); setAiImage({ dataUrl, mediaType: f.type || "image/jpeg" }); } catch (err) {}
-        }} />
-        {aiImage ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src={aiImage.dataUrl} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border-light)" }} />
-            <button type="button" className="btn btn-grey btn-xs" onClick={() => setAiImage(null)}>Remove image</button>
-          </div>
-        ) : (
-          <button type="button" className="btn btn-grey btn-sm" onClick={() => aiImageRef.current && aiImageRef.current.click()}>📷 Add a photo</button>
-        )}
-      </div>
       {aiError && <div style={{ fontSize: 12, color: "var(--red, #b3261e)", marginTop: 8 }}>{aiError}</div>}
-      <button className="btn btn-ink" style={{ marginTop: 10 }} disabled={(!aiText.trim() && !aiImage) || aiLoading} onClick={() => runAiAutofill(mode)}>
+      <button className="btn btn-ink" style={{ marginTop: 10 }} disabled={!aiText.trim() || aiLoading} onClick={() => runAiAutofill(mode)}>
         {aiLoading ? "Reading…" : "Autofill"}
       </button>
     </div>
