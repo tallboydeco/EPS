@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Erin McDonald Co. · Event Production Sheet</title>
+  <title>tallboydeco · Event Production Sheet</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
@@ -11,61 +11,17 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    /* ── localStorage-backed polyfill for window.storage ──
-       The Claude preview environment provides a built-in window.storage
-       API. Outside that environment (e.g. deployed on Cloudflare Pages),
-       window.storage does not exist, so this app's saves were silently
-       no-oping. This shim gives it the same get/set/delete/list interface,
-       backed by the browser's real localStorage, so saves persist on
-       this device/browser going forward. */
-    if (typeof window !== "undefined" && !window.storage) {
-      const LS_PREFIX = "eps:";
-      const k = (key) => LS_PREFIX + key;
-      window.storage = {
-        async get(key) {
-          try {
-            const raw = localStorage.getItem(k(key));
-            return raw === null ? null : { key, value: raw };
-          } catch (e) { return null; }
-        },
-        async set(key, value) {
-          try {
-            localStorage.setItem(k(key), value);
-            return { key, value };
-          } catch (e) { return null; }
-        },
-        async delete(key) {
-          try {
-            localStorage.removeItem(k(key));
-            return { key, deleted: true };
-          } catch (e) { return null; }
-        },
-        async list(prefix) {
-          try {
-            const keys = [];
-            for (let i = 0; i < localStorage.length; i++) {
-              const full = localStorage.key(i);
-              if (full && full.startsWith(LS_PREFIX)) {
-                const stripped = full.slice(LS_PREFIX.length);
-                if (!prefix || stripped.startsWith(prefix)) keys.push(stripped);
-              }
-            }
-            return { keys };
-          } catch (e) { return null; }
-        }
-      };
-    }
-
     const { useState, useEffect, useRef, useMemo } = React;
 
 /* ════════════════════════════════════════════════════════
    STYLES
 ════════════════════════════════════════════════════════ */
 const css = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=JetBrains+Mono:wght@300;400;500;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --black:#000000;
+  --accent:#400B01;
   --white:#FFFFFF;
   --muted:#F5F5F5;
   --muted-fg:#525252;
@@ -87,25 +43,36 @@ const css = `
 .epswrap{background:var(--white);color:var(--black);font-family:var(--body);font-size:16px;line-height:1.6;min-height:100vh;}
 .root{max-width:880px;margin:0 auto;padding:0 28px 140px;}
 /* ── Masthead ── */
-.masthead{padding:44px 0 20px;display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;border-bottom:4px solid var(--black);margin-bottom:0;}
+.masthead{padding:44px 0 20px;display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;border-bottom:4px solid var(--accent);margin-bottom:0;}
 .mast-eyebrow{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--muted-fg);margin-bottom:12px;}
 .mast-title{font-family:var(--serif);font-size:56px;font-weight:400;line-height:1.0;letter-spacing:-.02em;font-style:italic;}
-.mast-save{font-family:var(--mono);font-size:9px;color:var(--muted-fg);font-weight:400;text-align:right;flex-shrink:0;letter-spacing:.06em;}
+.mast-save{font-family:var(--mono);font-size:9px;color:var(--muted-fg);font-weight:400;text-align:left;flex-shrink:0;letter-spacing:.06em;white-space:nowrap;}
+.clock-widget{display:flex;align-items:center;gap:12px;padding:12px 22px;border:1.5px solid var(--accent);border-radius:999px;background:var(--white);box-shadow:3px 3px 0 var(--accent);}
+.clock-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:clockPulse 2s ease-in-out infinite;}
+@keyframes clockPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(64,11,1,.5);}50%{opacity:.55;box-shadow:0 0 0 5px rgba(64,11,1,0);}}
+.clock-time{font-family:var(--mono);font-size:21px;font-weight:700;letter-spacing:.01em;line-height:1.1;font-variant-numeric:tabular-nums;}
+.clock-date{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);margin-top:3px;}
 .spinner{display:inline-block;width:12px;height:12px;border-radius:50%;border:1.5px solid var(--border-light);border-top-color:var(--black);animation:eps-spin .7s linear infinite;flex-shrink:0;}
 @keyframes eps-spin{to{transform:rotate(360deg);}}
 /* ── Tab rail ── */
-.rail{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--black);margin-bottom:40px;-webkit-overflow-scrolling:touch;}
+.rail{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--black);margin-bottom:28px;-webkit-overflow-scrolling:touch;}
 .rail::-webkit-scrollbar{display:none;}
-.rail-tab{flex-shrink:0;padding:16px 16px 13px;border:none;background:transparent;font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .1s,border-color .1s;}
+.rail-tab{flex-shrink:0;padding:16px 10px 13px;border:none;background:transparent;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .1s,border-color .1s;}
 .rail-tab:hover{color:var(--black);}
-.rail-tab.active{color:var(--black);border-bottom-color:var(--black);}
+.rail-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
 /* ── Section headings ── */
 .sh{font-family:var(--serif);font-size:42px;font-weight:400;letter-spacing:-.01em;margin-bottom:6px;font-style:italic;}
-.sd{font-family:var(--mono);font-size:9px;color:var(--muted-fg);letter-spacing:.14em;margin-bottom:32px;line-height:1.5;text-transform:uppercase;}
-.section-lbl{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-fg);margin:32px 0 10px;padding-bottom:6px;border-bottom:4px solid var(--black);display:flex;align-items:center;justify-content:space-between;}
+.sd{font-family:var(--mono);font-size:9px;color:var(--muted-fg);letter-spacing:.14em;margin-bottom:22px;line-height:1.5;text-transform:uppercase;}
+.section-lbl{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-fg);margin:22px 0 8px;padding-bottom:5px;border-bottom:4px solid var(--accent);display:flex;align-items:center;justify-content:space-between;}
 .section-lbl:first-of-type{margin-top:0;}
 /* ── Cards ── */
-.card{border-top:4px solid var(--black);padding:22px 0;margin-bottom:0;}
+.card{border-top:4px solid var(--accent);padding:16px 0;margin-bottom:0;}
+.ai-widget{border:1.5px solid var(--accent);border-radius:16px;padding:22px 24px;margin-bottom:0;background:linear-gradient(180deg,rgba(64,11,1,.06),rgba(64,11,1,0) 60%);box-shadow:4px 4px 0 var(--accent);}
+.ai-widget-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.ai-widget-badge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;background:var(--accent);color:#fff;padding:4px 10px;border-radius:999px;}
+.ai-widget-title{font-family:var(--serif);font-size:19px;font-style:italic;}
+.ftextarea.ai-widget-textarea{width:100%;border:1px solid var(--border-light);border-radius:10px;padding:14px;background:var(--white);border-bottom:1px solid var(--border-light);}
+.ftextarea.ai-widget-textarea:focus{outline:none;border-color:var(--black);}
 .col-card{border-top:4px solid var(--black);padding:20px 0;margin-bottom:0;}
 /* ── Fields ── */
 .grid{display:grid;gap:20px 22px;}
@@ -113,7 +80,7 @@ const css = `
 .g3{grid-template-columns:1fr 110px 90px;}
 .field{display:flex;flex-direction:column;gap:6px;}
 .flabel{font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg);}
-.finput,.fselect,.ftextarea{background:transparent;border:none;border-bottom:1px solid var(--black);border-radius:0;padding:10px 0;font-size:15px;font-family:var(--body);color:var(--black);width:100%);}
+.finput,.fselect,.ftextarea{background:transparent;border:none;border-bottom:1px solid var(--black);border-radius:0;padding:10px 0;font-size:15px;font-family:var(--body);color:var(--black);width:100%;box-sizing:border-box;}
 .finput{appearance:none;-webkit-appearance:none;}
 .fselect{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath d='M0 0L4.5 5L9 0z' fill='%23000'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 2px bottom 14px;padding-right:22px;cursor:pointer;}
 .ftextarea{resize:vertical;min-height:72px;line-height:1.6;padding:8px 0;}
@@ -129,8 +96,8 @@ const css = `
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 22px;border-radius:0;font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.18em;text-transform:uppercase;border:1px solid transparent;cursor:pointer;min-height:42px;transition:background .1s,color .1s,border-color .1s;}
 .btn:active{opacity:.75;}
 .btn-blue{background:var(--black);color:var(--white);border-color:var(--black);}
-.btn-ink{background:var(--black);color:var(--white);border-color:var(--black);}
-.btn-ink:hover{background:var(--white);color:var(--black);border-color:var(--black);}
+.btn-ink{background:var(--accent);color:var(--white);border-color:var(--accent);}
+.btn-ink:hover{background:var(--white);color:var(--accent);border-color:var(--accent);}
 .btn-ink:disabled{background:var(--border-light);color:var(--muted-fg);border-color:var(--border-light);cursor:default;}
 .btn-grey{background:transparent;color:var(--black);border:1px solid var(--black);}
 .btn-grey:hover{background:var(--black);color:var(--white);}
@@ -146,8 +113,8 @@ const css = `
 .btn-add{background:var(--black);color:var(--white);border:none;min-height:30px;padding:5px 14px;font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;}
 .btn-add:disabled{background:var(--border-light);color:var(--muted-fg);cursor:default;}
 /* ── Badges ── */
-.badge{display:inline-block;background:var(--black);color:var(--white);font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.06em;padding:3px 8px;}
-.badge-blue{background:var(--black);}
+.badge{display:inline-block;background:var(--accent);color:var(--white);font-family:var(--mono);font-size:9px;font-weight:400;letter-spacing:.06em;padding:3px 8px;}
+.badge-blue{background:var(--accent);}
 .badge-soft{background:var(--muted);color:var(--black);border:1px solid var(--border-light);}
 /* ── Quick links ── */
 .ql-list{border-top:1px solid var(--black);margin-bottom:8px;}
@@ -297,59 +264,59 @@ const css = `
 .pd-section{margin-bottom:36px;}
 .pd-section:last-child{margin-bottom:0;}
 .pd-section + .pd-section{border-top:2px solid #000;padding-top:28px;}
-.pd-eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:#000;margin-bottom:10px;}
-.pd-client{font-family:'Playfair Display',Georgia,serif;font-size:54px;font-weight:400;line-height:1.0;font-style:italic;letter-spacing:-.01em;}
-.pd-sect-name{font-family:'Playfair Display',Georgia,serif;font-size:29px;font-style:italic;font-weight:400;color:#000;margin-top:5px;}
-.pd-rule{border:none;border-top:2px solid #000;margin:20px 0;}
+.pd-eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+.pd-client{font-family:'Playfair Display',Georgia,serif;font-size:54px;font-weight:400;line-height:1.0;font-style:italic;letter-spacing:-.01em;color:var(--accent);}
+.pd-sect-name{font-family:'Playfair Display',Georgia,serif;font-size:29px;font-style:italic;font-weight:700;color:#000;margin-top:5px;border-left:5px solid var(--accent);padding-left:12px;}
+.pd-rule{border:none;border-top:2px solid var(--accent);margin:20px 0;}
 .pd-hair{border:none;border-top:1px solid #E5E5E5;margin:10px 0;}
 .pd-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 24px;font-size:16px;margin:20px 0;}
-.pd-meta b{font-family:'JetBrains Mono',monospace;font-weight:400;display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#000;margin-bottom:3px;}
+.pd-meta b{font-family:'JetBrains Mono',monospace;font-weight:800;display:block;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#000;margin-bottom:3px;}
 .pd-delivery{border:1px solid #000;padding:16px 18px;margin:18px 0 22px;font-size:16px;line-height:1.5;display:inline-block;min-width:240px;}
-.pd-coltitle{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:400;letter-spacing:.24em;text-transform:uppercase;margin:28px 0 14px;padding-bottom:7px;border-bottom:2px solid #000;}
+.pd-coltitle{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;margin:28px 0 14px;padding-bottom:7px;border-bottom:2px solid var(--accent);color:var(--accent);}
 /* Production PDF — new two-column layout */
 .pd-piece{margin-bottom:28px;page-break-inside:avoid;border:1px solid #000;}
 .pd-piece-head{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#fff;border-bottom:3px solid #000;}
 .pd-piece-title{font-family:'Playfair Display',Georgia,serif;font-size:24px;font-weight:400;font-style:italic;color:#000;flex:1;}
-.pd-piece-qty-big{font-family:'JetBrains Mono',monospace;font-size:19px;color:#000;font-weight:700;margin-left:12px;}
+.pd-piece-qty-big{font-family:'JetBrains Mono',monospace;font-size:19px;color:var(--accent);font-weight:700;margin-left:12px;}
 .pd-piece-body{padding:0;}
-.pd-sec-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#000;padding:12px 18px 0;}
-.pd-rx-head{display:grid;grid-template-columns:1fr 90px 110px;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#000;padding:9px 18px 9px;border-top:1px solid #E5E5E5;border-bottom:1.5px solid #000;margin-top:8px;}
+.pd-sec-label{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#000;padding:12px 18px 0;}
+.pd-rx-head{display:grid;grid-template-columns:1fr 90px 110px;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#000;padding:9px 18px 9px;border-top:1px solid #E5E5E5;border-bottom:1.5px solid var(--accent);margin-top:8px;}
 .pd-rx-head>:nth-child(2),.pd-rx-head>:nth-child(3){text-align:right;}
 .pd-rx-row{display:grid;grid-template-columns:1fr 90px 110px;gap:6px;padding:12px 18px;border-bottom:1px solid #E5E5E5;align-items:baseline;}
 .pd-rx-row:last-child{border-bottom:none;}
 .pd-rx-name{font-family:'Source Serif 4',Georgia,serif;font-size:18px;font-weight:400;}
-.pd-rx-each{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;text-align:right;}
-.pd-rx-total{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;text-align:right;}
+.pd-rx-each{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;text-align:right;color:var(--accent);}
+.pd-rx-total{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;text-align:right;color:var(--accent);}
 .pd-rx-unit{font-family:'Source Serif 4',Georgia,serif;font-size:12px;font-weight:400;color:#000;margin-left:3px;}
-.pd-hg-head{display:grid;grid-template-columns:1fr 110px;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#000;padding:9px 18px;border-top:1px solid #E5E5E5;border-bottom:1.5px solid #000;margin-top:0;}
+.pd-hg-head{display:grid;grid-template-columns:1fr 110px;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#000;padding:9px 18px;border-top:1px solid #E5E5E5;border-bottom:1.5px solid var(--accent);margin-top:0;}
 .pd-hg-head>:nth-child(2){text-align:right;}
 .pd-hg-row{display:grid;grid-template-columns:1fr 110px;gap:6px;padding:11px 18px;border-bottom:1px solid #E5E5E5;align-items:baseline;}
 .pd-hg-row:last-child{border-bottom:none;}
-.pd-hg-qty{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;text-align:right;}
+.pd-hg-qty{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;text-align:right;color:var(--accent);}
 /* Remaining PDF classes */
 .pd-piece-num{display:none;}
 .pd-2col{display:block;}
-.pd-colhead{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#000;margin-bottom:5px;}
+.pd-colhead{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#000;margin-bottom:5px;}
 .pd-ul{list-style:none;font-size:16px;}
 .pd-ul li{padding:2.5px 0;display:flex;justify-content:space-between;gap:8px;}
 .pd-img{max-height:110px;border:1px solid #E5E5E5;margin-bottom:8px;display:block;max-width:100%;}
 .pd-mrow{display:grid;grid-template-columns:1fr 100px 118px;gap:14px;padding:10px 0;border-bottom:1px solid #E5E5E5;}
-.pd-mrow.head{border-bottom:2px solid #000;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#000;}
+.pd-mrow.head{border-bottom:2px solid var(--accent);font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#000;}
 .pd-mrow>:nth-child(2),.pd-mrow>:nth-child(3){text-align:right;}
 .pd-mname{font-weight:400;}
 .pd-mmath{font-family:'JetBrains Mono',monospace;font-size:13px;color:#000;}
-.pd-mnum{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:700;}
+.pd-mnum{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:700;color:var(--accent);}
 .pd-ck{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid #E5E5E5;font-size:16px;align-items:center;}
 .pd-ckq{font-family:'JetBrains Mono',monospace;font-weight:700;min-width:46px;text-align:right;}
 .pd-sched-row{display:grid;grid-template-columns:70px 1fr 1fr 1fr;gap:10px;padding:8px 0;border-bottom:1px solid #E5E5E5;font-size:15px;}
-.pd-sched-row.head{border-bottom:2px solid #000;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#000;}
+.pd-sched-row.head{border-bottom:2px solid var(--accent);font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#000;}
 .pd-fp-box{border:1px dashed #aaa;min-height:130px;margin-bottom:14px;padding:10px 12px;}
-.pd-fp-label{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#000;}
+.pd-fp-label{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#000;}
 .pd-contact{padding:14px 0;border-bottom:1px solid #E5E5E5;page-break-inside:avoid;}
 .pd-cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;font-size:16px;margin-top:5px;}
-.pd-foot{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#000;margin-top:40px;}
+.pd-foot{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-top:40px;}
 .pd-sign{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:36px;}
-.pd-sign div{border-top:1px solid #000;padding-top:6px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:#000;}
+.pd-sign div{border-top:2px solid var(--accent);padding-top:6px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;font-size:12px;font-weight:700;color:#000;}
 /* ── Contact badges ── */
 .contact-type-badge{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border:1px solid transparent;}
 .contact-type-badge.staff{background:var(--black);color:var(--white);}
@@ -480,6 +447,18 @@ const AI_AUTOFILL_SYSTEM = `You extract structured event-production data from me
   "hgExtras": [{"name":"","qty":""}]
 }
 Rules: event_date and days[].date must be ISO YYYY-MM-DD if a year can be inferred, else leave "". "pullMode":"per" means the stem quantities given are PER PIECE (piece qty is the count of pieces, e.g. "2 arrangements, 20 roses each"); use "total" only if the quantities given are already a combined total for all pieces together. Only include sections/fields actually present in the source text — use empty arrays/strings rather than inventing data. Do not fabricate names, numbers, or dates.`;
+
+const LIBRARY_AUTOFILL_SYSTEM = `You extract reusable reference information from notes for a floral & event design studio, to save into their saved-names library and contact list — not into any specific event. Return ONLY raw JSON — no markdown fences, no commentary — matching exactly this shape:
+{
+  "contacts": [{"name":"","contactType":"staff|venue|vendor","role":"","businessName":"","phone":"","email":"","notes":""}],
+  "flowers": [""],
+  "hardGoods": [""],
+  "businesses": [""],
+  "venues": [""],
+  "clients": [""],
+  "roles": [""]
+}
+"flowers" is fresh/floral ingredient names (roses, hydrangea, eucalyptus, etc). "hardGoods" is vessels, mechanics, candles, and other reusable hard-good item names. "businesses" is vendor/company names. Contacts should include whatever fields are actually available — a person may only have a phone number, or only an email, that's fine, leave the rest blank rather than guessing. Only include people/terms actually present in the source text or visible in the image. Do not fabricate names, numbers, or contact info.`;
 
 /* ── Autofill (CSV / text drag-and-drop) ── */
 const AUTOFILL_FIELD_LABELS = {
@@ -889,7 +868,7 @@ const DayCard = ({ day, label, allowRemove, onRemove, onDateChange, staffNames, 
 );
 
 function EventProductionSheet() {
-  const PAGES = ["Home", "Event", "Contacts", "Build", "Production", "Fresh", "Hard Goods", "Logistics", "Team Sheet", "Event Timeline", "Library", "Vendors"];
+  const PAGES = ["Home", "Event", "Contacts", "Vendors", "Build", "Production", "Fresh", "Hard Goods", "Logistics", "Event Timeline", "Team Sheet", "Library"];
   const [page, setPage] = useState(0);
   const [events, setEvents] = useState([]);
   const [currentEventId, setCurrentEventId] = useState(null);
@@ -928,12 +907,19 @@ function EventProductionSheet() {
   const [autofillPreview, setAutofillPreview] = useState(null);
   const [showAutofillConfirm, setShowAutofillConfirm] = useState(false);
   const [aiText, setAiText] = useState("");
+  const [aiImage, setAiImage] = useState(null);
+  const aiImageRef = useRef(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiPreview, setAiPreview] = useState(null);
   const [showAiPreview, setShowAiPreview] = useState(false);
   const [vendorPdfLoading, setVendorPdfLoading] = useState(false);
   const [vendorPdfError, setVendorPdfError] = useState("");
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
   const autofillFileRef = useRef(null);
   const backupFileRef = useRef(null);
   const loaded = useRef(false);
@@ -1357,26 +1343,41 @@ function EventProductionSheet() {
     setFileRestoreData(null);
   };
 
-  const runAiAutofill = async () => {
+  const runAiAutofill = async (mode = "general") => {
     const text = aiText.trim();
-    if (!text) return;
+    if (!text && !aiImage) return;
     setAiLoading(true); setAiError(""); setAiPreview(null);
     try {
+      const contentBlocks = [];
+      if (aiImage) {
+        contentBlocks.push({ type: "image", source: { type: "base64", media_type: aiImage.mediaType, data: aiImage.dataUrl.split(",")[1] || "" } });
+      }
+      contentBlocks.push({ type: "text", text: text || "Extract the relevant details from this image." });
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 4000,
-          system: AI_AUTOFILL_SYSTEM,
-          messages: [{ role: "user", content: text }],
+          system: mode === "library" ? LIBRARY_AUTOFILL_SYSTEM : AI_AUTOFILL_SYSTEM,
+          messages: [{ role: "user", content: contentBlocks }],
         }),
       });
       const data = await resp.json();
       const textBlocks = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
       const clean = textBlocks.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
-      const norm = {
+      const norm = mode === "library" ? {
+        mode: "library",
+        contacts: Array.isArray(parsed && parsed.contacts) ? parsed.contacts : [],
+        flowers: Array.isArray(parsed && parsed.flowers) ? parsed.flowers : [],
+        hardGoods: Array.isArray(parsed && parsed.hardGoods) ? parsed.hardGoods : [],
+        businesses: Array.isArray(parsed && parsed.businesses) ? parsed.businesses : [],
+        venues: Array.isArray(parsed && parsed.venues) ? parsed.venues : [],
+        clients: Array.isArray(parsed && parsed.clients) ? parsed.clients : [],
+        roles: Array.isArray(parsed && parsed.roles) ? parsed.roles : [],
+      } : {
+        mode: "general",
         info: parsed && typeof parsed.info === "object" && parsed.info ? parsed.info : {},
         contacts: Array.isArray(parsed && parsed.contacts) ? parsed.contacts : [],
         vendors: Array.isArray(parsed && parsed.vendors) ? parsed.vendors : [],
@@ -1407,6 +1408,51 @@ function EventProductionSheet() {
   const applyAiAutofill = () => {
     const d = aiPreview;
     if (!d) return;
+
+    if (d.mode === "library") {
+      const goodContacts = (d.contacts || []).filter((c) => c && (c.name || "").trim());
+      if (goodContacts.length) {
+        setContacts((prev) => {
+          const base = prev.length === 1 && !prev[0].name.trim() ? [] : prev.slice();
+          goodContacts.forEach((c) => {
+            const idx = base.findIndex((existing) => nrmKey(existing.name) === nrmKey(c.name));
+            if (idx > -1) {
+              const existing = base[idx];
+              base[idx] = {
+                ...existing,
+                contactType: existing.contactType || (["staff", "venue", "vendor"].includes(c.contactType) ? c.contactType : existing.contactType),
+                businessName: existing.businessName || c.businessName || "",
+                role: existing.role || c.role || "",
+                phone: existing.phone || c.phone || "",
+                email: existing.email || c.email || "",
+                notes: existing.notes ? (c.notes && !existing.notes.includes(c.notes) ? existing.notes + " · " + c.notes : existing.notes) : (c.notes || ""),
+              };
+            } else {
+              base.push({
+                ...newContact(), name: c.name || "",
+                contactType: ["staff", "venue", "vendor"].includes(c.contactType) ? c.contactType : "",
+                businessName: c.businessName || "", role: c.role || "", phone: c.phone || "", email: c.email || "", notes: c.notes || "",
+              });
+            }
+          });
+          return base;
+        });
+        goodContacts.forEach((c) => learn("contacts", c.name));
+      }
+      (d.flowers || []).forEach((v) => v && v.trim() && learn("flowers", v));
+      (d.hardGoods || []).forEach((v) => v && v.trim() && learn("components", v));
+      (d.businesses || []).forEach((v) => v && v.trim() && learn("businesses", v));
+      (d.venues || []).forEach((v) => v && v.trim() && learn("venues", v));
+      (d.clients || []).forEach((v) => v && v.trim() && learn("clients", v));
+      (d.roles || []).forEach((v) => v && v.trim() && learn("roles", v));
+
+      setAiPreview(null);
+      setShowAiPreview(false);
+      setAiText("");
+      setAiImage(null);
+      setSaveState("Autofill applied to Library — review to confirm");
+      return;
+    }
 
     if (d.info && Object.keys(d.info).length) {
       setInfo((prev) => {
@@ -1524,7 +1570,8 @@ function EventProductionSheet() {
     setAiPreview(null);
     setShowAiPreview(false);
     setAiText("");
-    setSaveState("AI autofill applied — review the tabs to confirm");
+    setAiImage(null);
+    setSaveState("Autofill applied — review the tabs to confirm");
   };
 
   const handleAutofillFile = async (file) => {
@@ -1695,7 +1742,7 @@ function EventProductionSheet() {
     return { built, totals, mathParts, flags, hgGroups };
   }, [collections]);
 
-  const PDF_TITLES = { all: "Full Production Sheet", production: "Production", master: "Fresh", order: "Order Form", hardgoods: "Hard Goods", load: "Load List", contacts: "Team Sheet", schedule: "Event Timeline", vendors: "Vendor Contacts" };
+  const PDF_TITLES = { all: "Full Production Sheet", production: "Event Production Sheet", master: "Fresh", order: "Order Form", hardgoods: "Hard Goods", load: "Load List", contacts: "Team Sheet", schedule: "Event Timeline", vendors: "Vendor Contacts" };
   const exportPdf = (scope) => { setPdfScope(scope); try { window.scrollTo(0, 0); } catch (e) {} };
   const safeFile = (s) => (s || "").replace(/[\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim();
   function openHtmlInNewTab(html) {
@@ -1839,10 +1886,45 @@ window.onload = function () {
     }
   };
 
+  const renderAutofillWidget = (mode = "general") => (
+    <div className="ai-widget">
+      <div className="ai-widget-head">
+        <span className="ai-widget-badge">✦ Autofill</span>
+        <span className="ai-widget-title">{mode === "library" ? "Paste notes or a photo, save reusable names" : "Paste notes or a photo, get a filled-in sheet"}</span>
+      </div>
+      <p style={{ fontSize: 12, color: "var(--g4)", lineHeight: 1.6, marginBottom: 12 }}>
+        {mode === "library"
+          ? "Paste raw notes or upload a photo — a vendor's card, a contact list, an order confirmation. Claude saves contacts, flower names, hard good names, and other reusable terms to your Library only, not to any event. Existing contacts are never duplicated — if you already have someone saved with just a phone number and this adds their email, it fills the email in on that same contact rather than creating a second one. Review before saving."
+          : "Paste raw notes or upload a photo of handwritten notes — client details, a floral recipe, a timeline, vendor or contact info, whatever you've got. Claude sorts it into the right tabs. Nothing gets overwritten and duplicates are skipped automatically. Review before saving."}
+      </p>
+      <textarea className="ftextarea ai-widget-textarea" style={{ minHeight: 160 }} value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder={mode === "library" ? 'Paste notes here, e.g.\n"Madeline, linens vendor, madeline@example.com" or a list of flowers you order often' : 'Paste notes here, e.g.\n"Baylee & Tommy, Sterling at Arrowhead, July 4 2026. Ceremony: 2 pieces, 20 playa roses each..."'} />
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+        <input ref={aiImageRef} type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
+          const f = e.target.files && e.target.files[0];
+          e.target.value = "";
+          if (!f) return;
+          try { const dataUrl = await rawFileToDataURL(f); setAiImage({ dataUrl, mediaType: f.type || "image/jpeg" }); } catch (err) {}
+        }} />
+        {aiImage ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img src={aiImage.dataUrl} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border-light)" }} />
+            <button type="button" className="btn btn-grey btn-xs" onClick={() => setAiImage(null)}>Remove image</button>
+          </div>
+        ) : (
+          <button type="button" className="btn btn-grey btn-sm" onClick={() => aiImageRef.current && aiImageRef.current.click()}>📷 Add a photo</button>
+        )}
+      </div>
+      {aiError && <div style={{ fontSize: 12, color: "var(--red, #b3261e)", marginTop: 8 }}>{aiError}</div>}
+      <button className="btn btn-ink" style={{ marginTop: 10 }} disabled={(!aiText.trim() && !aiImage) || aiLoading} onClick={() => runAiAutofill(mode)}>
+        {aiLoading ? "Reading…" : "Autofill"}
+      </button>
+    </div>
+  );
+
   const renderQuickLinks = () => (
     <div>
       <div className="sh">Event Production</div>
-      <div className="sd">Production management for Erin McDonald Co.</div>
+      <div className="sd">Event Management tool for Erin McDonald Co.</div>
       {eventsLoading ? (
         <div className="card" style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--label-2)", fontSize: 14 }}>
           <span className="spinner" /> Loading your events…
@@ -1870,21 +1952,12 @@ window.onload = function () {
           </div>
         </>
       )}
-      <div className="section-lbl">AI Autofill</div>
-      <div className="card">
-        <p style={{ fontSize: 12, color: "var(--g4)", lineHeight: 1.6, marginBottom: 12 }}>
-          Paste raw notes — client details, a floral recipe, a timeline, vendor info, whatever you've got — and Claude will sort it into the right tabs. Nothing gets overwritten and duplicates are skipped automatically — it only adds contacts, vendors, pieces, and rows that aren't already there, and only fills blank Event fields. Review before saving.
-        </p>
-        <textarea className="ftextarea" style={{ minHeight: 120 }} value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder={'Paste notes here, e.g.\n"Baylee & Tommy, Sterling at Arrowhead, July 4 2026. Ceremony: 2 pieces, 20 playa roses each, 20 white hydrangea each..."'} />
-        {aiError && <div style={{ fontSize: 12, color: "var(--red, #b3261e)", marginTop: 8 }}>{aiError}</div>}
-        <button className="btn btn-ink" style={{ marginTop: 10 }} disabled={!aiText.trim() || aiLoading} onClick={runAiAutofill}>
-          {aiLoading ? "Reading your notes…" : "Parse with AI"}
-        </button>
-      </div>
+      <div className="section-lbl">Autofill</div>
+      {renderAutofillWidget()}
 
       <div className="section-lbl">Input</div>
       <div className="ql-list">
-        {[["Event", "Client, date & venue", 1], ["Contacts", "Staff, venue & day-of contacts", 2], ["Vendors", "Vendor list & invoice PDFs", 11], ["Build", "Arrangements & stem recipes", 3]].map(([t, s, i]) => (
+        {[["Event", "Client, date & venue", 1], ["Contacts", "Staff, venue & day-of contacts", 2], ["Vendors", "Vendor list & invoice PDFs", 3], ["Build", "Arrangements & stem recipes", 4]].map(([t, s, i]) => (
           <button className="ql-item" key={t} onClick={() => setPage(i)}>
             <span>{t}<div className="ql-sub">{s}</div></span><span className="ql-chev">›</span>
           </button>
@@ -1892,7 +1965,7 @@ window.onload = function () {
       </div>
       <div className="section-lbl">Review &amp; Export</div>
       <div className="ql-list">
-        {[["Production", "All arrangements with full stem recipes", 4], ["Fresh & Order", "Master totals plus wholesale ordering", 5], ["Hard Goods", "Vessels, mechanics & hard goods checklist", 6], ["Logistics", "What goes in the van", 7], ["Team Sheet", "Printable day-of contact sheet", 8], ["Event Timeline", "Day-by-day timing & load-in/out", 9], ["Library", "Saved names for autofill", 10]].map(([t, s, i]) => (
+        {[["Production", "All arrangements with full stem recipes", 5], ["Fresh & Order", "Master totals plus wholesale ordering", 6], ["Hard Goods", "Vessels, mechanics & hard goods checklist", 7], ["Logistics", "What goes in the van", 8], ["Event Timeline", "Day-by-day timing & load-in/out", 9], ["Team Sheet", "Printable day-of contact sheet", 10], ["Library", "Saved names for autofill", 11]].map(([t, s, i]) => (
           <button className="ql-item" key={t} onClick={() => setPage(i)}>
             <span>{t}<div className="ql-sub">{s}</div></span><span className="ql-chev">›</span>
           </button>
@@ -1929,22 +2002,6 @@ window.onload = function () {
     <div>
       <div className="sh">Event</div>
       <div className="sd">Core event details. Blank fields print as [TBC] on the production sheet.</div>
-      <div
-        className={`dz ${autofillDrag ? "over" : ""}`}
-        style={{ minHeight: 84 }}
-        onClick={() => autofillFileRef.current && autofillFileRef.current.click()}
-        onDragOver={(e) => { e.preventDefault(); setAutofillDrag(true); }}
-        onDragLeave={() => setAutofillDrag(false)}
-        onDrop={(e) => {
-          e.preventDefault(); setAutofillDrag(false);
-          const f = e.dataTransfer.files && e.dataTransfer.files[0];
-          if (f) handleAutofillFile(f);
-        }}
-      >
-        <span>⇩ Drag a .csv or .txt file here to autofill — or tap to browse</span>
-        <span style={{ fontSize: 8, opacity: 0.75 }}>Reads rows like "Venue, The Sycamore Room" or a header row + one data row</span>
-      </div>
-      <input ref={autofillFileRef} type="file" accept=".csv,.txt,text/csv,text/plain" style={{ display: "none" }} onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) handleAutofillFile(f); e.target.value = ""; }} />
       <div className="card">
         <div className="grid g2" style={{ marginBottom: 14 }}>
           <Field label="Client"><AutoInput className="finput" suggestions={library.clients} value={info.client} onChange={(v) => setInfoF("client", v)} onBlur={() => learn("clients", info.client)} placeholder="The Hartley Wedding" /></Field>
@@ -2009,6 +2066,8 @@ window.onload = function () {
     <div>
       <div className="sh">Contacts</div>
       <div className="sd">Everyone the team may need to reach — vendors, staff, venue.</div>
+      {renderAutofillWidget()}
+      <div className="section-lbl" style={{ marginTop: 8 }}>All Contacts</div>
       {contacts.map((c, idx) => {
         const isStaff = c.contactType === "staff", isVendor = c.contactType === "vendor", isVenue = c.contactType === "venue";
         return (
@@ -2284,7 +2343,7 @@ window.onload = function () {
         </div>
       )}
       <div className="export-row">
-        <button className="btn btn-line" onClick={() => setPage(3)}>← Edit</button>
+        <button className="btn btn-line" onClick={() => setPage(4)}>← Edit</button>
         <button className="btn btn-ink" onClick={() => exportPdf("production")}>Production PDF</button>
       </div>
     </div>
@@ -2714,6 +2773,8 @@ window.onload = function () {
       <div>
         <div className="sh">Library</div>
         <div className="sd" style={{ fontStyle: "italic" }}>Powers autofill after 2 characters. Names save automatically as you type.</div>
+        {renderAutofillWidget("library")}
+        <div className="section-lbl" style={{ marginTop: 8 }}>Saved Names</div>
         {Object.keys(LIB_LABELS).map((cat) => (
           <div className="idx-cat" key={cat}>
             <button className="idx-cat-head" onClick={() => setOpenIdx((p) => ({ ...p, [cat]: !p[cat] }))}>
@@ -2754,43 +2815,43 @@ window.onload = function () {
     const hasVenue2 = !!(info.venue2.trim() || v2AddrParts.length);
     return (
       <div>
-        <div className="pd-eyebrow">Erin Mcdonald Co. · Production Sheet</div>
-        <div className="pd-client">{fv(info.client, "Client / Event Name")}</div>
+        <div className="pd-eyebrow">Erin McDonald Co.</div>
+        {info.client && <div className="pd-client">{info.client}</div>}
         <div className="pd-sect-name">{section}</div>
         <hr className="pd-rule" />
         <div className="pd-meta">
-          <div><b>Event Date</b>{fv(fmtDateLong(info.event_date), "needs confirmation")}</div>
-          <div><b>Venue</b>{fv(info.venue, "needs confirmation")}</div>
-          <div><b>Address</b>{addrParts.length ? addrParts.join(", ") : "[needs confirmation]"}</div>
-          <div><b>Setup</b>{fv(setupVal, "needs confirmation")}</div>
-          <div><b>Takedown</b>{fv(takedownVal, "needs confirmation")}</div>
-          <div><b>Planner</b>{fv(info.planner_name, "needs confirmation")}</div>
-          <div><b>Designer</b>{fv(info.designer_name, "needs confirmation")}</div>
+          {info.event_date && <div><b>Event Date</b>{fmtDateLong(info.event_date)}</div>}
+          {info.venue && <div><b>Venue</b>{info.venue}</div>}
+          {addrParts.length > 0 && <div><b>Address</b>{addrParts.join(", ")}</div>}
+          {setupVal && <div><b>Setup</b>{setupVal}</div>}
+          {takedownVal && <div><b>Takedown</b>{takedownVal}</div>}
+          {info.planner_name && <div><b>Planner</b>{info.planner_name}</div>}
+          {info.designer_name && <div><b>Designer</b>{info.designer_name}</div>}
         </div>
         {hasVenue2 && (
           <div className="pd-meta" style={{ marginTop: -6 }}>
-            <div><b>Second Venue</b>{info.venue2 || "—"}</div>
-            <div><b>Address</b>{v2AddrParts.length ? v2AddrParts.join(", ") : "—"}</div>
+            {info.venue2 && <div><b>Second Venue</b>{info.venue2}</div>}
+            {v2AddrParts.length > 0 && <div><b>Address</b>{v2AddrParts.join(", ")}</div>}
           </div>
         )}
       </div>
     );
   };
-  const PdfFoot = () => <div className="pd-foot"><span>Erin Mcdonald Co.</span><span>{fv(info.client, "Event")}</span></div>;
+  const PdfFoot = () => <div className="pd-foot"><span>Event Management tool for Erin McDonald Co.</span><span>{fv(info.client, "Event")}</span></div>;
 
   const PdfProduction = () => (
     <div className="pd-section">
-      <PdfHeader section="Production" />
+      <PdfHeader section="Event Production Sheet" />
       {derived.built.map((col) => (
         <div key={col.id}>
-          <div className="pd-coltitle">{col.name || "Unnamed Collection"}</div>
+          <div className="pd-coltitle">{col.name}</div>
           {col.pieces.map((piece) => {
             const isTotal = piece.mode === "total";
             return (
               <div className="pd-piece" key={piece.id}>
                 {/* Inverted header — name + qty, NO item number */}
                 <div className="pd-piece-head">
-                  <span className="pd-piece-title">{piece.name || "Unnamed"}</span>
+                  <span className="pd-piece-title">{piece.name}</span>
                   <span className="pd-piece-qty-big">{piece.qty} {piece.qty === 1 ? "arr." : "arr."}</span>
                 </div>
                 <div className="pd-piece-body">
@@ -2954,7 +3015,7 @@ window.onload = function () {
         <PdfHeader section="Team Sheet" />
         {list.map((c) => (
           <div className="pd-contact" key={c.id}>
-            <div style={{ fontWeight: 700, fontSize: 17 }}>{c.name || "[Name needed]"} {c.contactType ? <span style={{ fontWeight: 400, color: "#000", fontSize: 13, textTransform: "uppercase", letterSpacing: ".06em" }}> · {c.contactType}</span> : null}</div>
+            <div style={{ fontWeight: 700, fontSize: 17 }}>{c.name}{c.contactType ? <span style={{ fontWeight: 700, color: "#000", fontSize: 13, textTransform: "uppercase", letterSpacing: ".06em" }}> · {c.contactType}</span> : null}</div>
             {c.role && <div style={{ fontStyle: "italic", fontSize: 16, color: "#000" }}>{c.role}{c.businessName ? " · " + c.businessName : ""}</div>}
             <div className="pd-cgrid">{c.phone && <div>{c.phone}</div>}{c.email && <div>{c.email}</div>}</div>
             {c.notes && <div style={{ fontSize: 16, color: "#000", marginTop: 5 }}>{c.notes}</div>}
@@ -2971,9 +3032,9 @@ window.onload = function () {
       <div style={{ marginBottom: 10 }}>
         <div className="pd-colhead">{label}</div>
         <div style={{ fontSize: 16, lineHeight: 1.6 }}>
-          <div><b>Location </b>{fv(b.location, "needs confirmation")}</div>
-          <div><b>Staff </b>{fv(b.staff, "needs confirmation")}</div>
-          <div><b>Items </b>{fv(b.items, "needs confirmation")}</div>
+          {b.location && <div><b>Location </b>{b.location}</div>}
+          {b.staff && <div><b>Staff </b>{b.staff}</div>}
+          {b.items && <div><b>Items </b>{b.items}</div>}
         </div>
       </div>
     ) : null;
@@ -3119,53 +3180,80 @@ window.onload = function () {
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowAiPreview(false); setAiPreview(null); } }}>
       <div className="modal-sheet">
         <div className="modal-handle" />
-        <div className="modal-title">AI Autofill Results</div>
+        <div className="modal-title">Autofill Results</div>
         <div className="modal-body">
-          Here's what Claude found in your notes. Applying will add these — it won't overwrite anything already filled in.
+          {aiPreview.mode === "library"
+            ? "Here's what Claude found. Applying will save these to your Library — existing contacts get missing fields filled in rather than duplicated."
+            : "Here's what Claude found in your notes. Applying will add these — it won't overwrite anything already filled in."}
         </div>
         <div style={{ maxHeight: 300, overflowY: "auto", marginBottom: 20, borderTop: "1px solid var(--border-light)", fontSize: 13 }}>
-          {Object.keys(aiPreview.info || {}).filter((k) => aiPreview.info[k]).length > 0 && (
-            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>Event Info</div>
-              {Object.keys(aiPreview.info).filter((k) => aiPreview.info[k]).map((k) => <div key={k}>{AUTOFILL_FIELD_LABELS[k] || k}: {aiPreview.info[k]}</div>)}
-            </div>
-          )}
-          {aiPreview.contacts.length > 0 && (
-            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.contacts.length} Contact{aiPreview.contacts.length === 1 ? "" : "s"}</div>
-              {aiPreview.contacts.map((c, i) => <div key={i}>{c.name}{c.role ? ` — ${c.role}` : ""}</div>)}
-            </div>
-          )}
-          {aiPreview.vendors.length > 0 && (
-            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.vendors.length} Vendor{aiPreview.vendors.length === 1 ? "" : "s"}</div>
-              {aiPreview.vendors.map((v, i) => <div key={i}>{v.name}{v.category ? ` — ${v.category}` : ""}</div>)}
-            </div>
-          )}
-          {aiPreview.collections.length > 0 && (
-            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.collections.length} Collection{aiPreview.collections.length === 1 ? "" : "s"}</div>
-              {aiPreview.collections.map((c, i) => <div key={i}>{c.name} ({(c.pieces || []).length} piece{(c.pieces || []).length === 1 ? "" : "s"})</div>)}
-            </div>
-          )}
-          {aiPreview.days.length > 0 && (
-            <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.days.length} Schedule Day{aiPreview.days.length === 1 ? "" : "s"}</div>
-              {aiPreview.days.map((d, i) => <div key={i}>{d.date || d.label || `Day ${i + 1}`} — {(d.rows || []).length} row{(d.rows || []).length === 1 ? "" : "s"}</div>)}
-            </div>
-          )}
-          {aiPreview.hgExtras.length > 0 && (
-            <div style={{ padding: "10px 0" }}>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.hgExtras.length} Rental Item{aiPreview.hgExtras.length === 1 ? "" : "s"}</div>
-              {aiPreview.hgExtras.map((h, i) => <div key={i}>{h.name}{h.qty ? ` — ${h.qty}` : ""}</div>)}
-            </div>
-          )}
-          {!Object.keys(aiPreview.info || {}).some((k) => aiPreview.info[k]) && !aiPreview.contacts.length && !aiPreview.vendors.length && !aiPreview.collections.length && !aiPreview.days.length && !aiPreview.hgExtras.length && (
-            <div style={{ padding: "14px 0", fontStyle: "italic", color: "var(--muted-fg)" }}>Nothing recognizable was found in that text.</div>
+          {aiPreview.mode === "library" ? (
+            <>
+              {(aiPreview.contacts || []).length > 0 && (
+                <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.contacts.length} Contact{aiPreview.contacts.length === 1 ? "" : "s"}</div>
+                  {aiPreview.contacts.map((c, i) => {
+                    const exists = contacts.some((ec) => nrmKey(ec.name) === nrmKey(c.name));
+                    return <div key={i}>{c.name}{c.role ? ` — ${c.role}` : ""}{exists ? " (fills gaps on existing contact)" : " (new)"}</div>;
+                  })}
+                </div>
+              )}
+              {["flowers", "hardGoods", "businesses", "venues", "clients", "roles"].map((cat) => (aiPreview[cat] || []).length > 0 && (
+                <div key={cat} style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{LIB_LABELS[cat === "hardGoods" ? "components" : cat] || cat} ({aiPreview[cat].length})</div>
+                  <div>{aiPreview[cat].join(", ")}</div>
+                </div>
+              ))}
+              {!(aiPreview.contacts || []).length && !["flowers", "hardGoods", "businesses", "venues", "clients", "roles"].some((cat) => (aiPreview[cat] || []).length) && (
+                <div style={{ padding: "14px 0", fontStyle: "italic", color: "var(--muted-fg)" }}>Nothing recognizable was found in that text.</div>
+              )}
+            </>
+          ) : (
+            <>
+              {Object.keys(aiPreview.info || {}).filter((k) => aiPreview.info[k]).length > 0 && (
+                <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>Event Info</div>
+                  {Object.keys(aiPreview.info).filter((k) => aiPreview.info[k]).map((k) => <div key={k}>{AUTOFILL_FIELD_LABELS[k] || k}: {aiPreview.info[k]}</div>)}
+                </div>
+              )}
+              {aiPreview.contacts.length > 0 && (
+                <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.contacts.length} Contact{aiPreview.contacts.length === 1 ? "" : "s"}</div>
+                  {aiPreview.contacts.map((c, i) => <div key={i}>{c.name}{c.role ? ` — ${c.role}` : ""}</div>)}
+                </div>
+              )}
+              {aiPreview.vendors.length > 0 && (
+                <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.vendors.length} Vendor{aiPreview.vendors.length === 1 ? "" : "s"}</div>
+                  {aiPreview.vendors.map((v, i) => <div key={i}>{v.name}{v.category ? ` — ${v.category}` : ""}</div>)}
+                </div>
+              )}
+              {aiPreview.collections.length > 0 && (
+                <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.collections.length} Collection{aiPreview.collections.length === 1 ? "" : "s"}</div>
+                  {aiPreview.collections.map((c, i) => <div key={i}>{c.name} ({(c.pieces || []).length} piece{(c.pieces || []).length === 1 ? "" : "s"})</div>)}
+                </div>
+              )}
+              {aiPreview.days.length > 0 && (
+                <div style={{ padding: "10px 0", borderBottom: "1px solid var(--border-light)" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.days.length} Schedule Day{aiPreview.days.length === 1 ? "" : "s"}</div>
+                  {aiPreview.days.map((d, i) => <div key={i}>{d.date || d.label || `Day ${i + 1}`} — {(d.rows || []).length} row{(d.rows || []).length === 1 ? "" : "s"}</div>)}
+                </div>
+              )}
+              {aiPreview.hgExtras.length > 0 && (
+                <div style={{ padding: "10px 0" }}>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted-fg)", marginBottom: 4 }}>{aiPreview.hgExtras.length} Rental Item{aiPreview.hgExtras.length === 1 ? "" : "s"}</div>
+                  {aiPreview.hgExtras.map((h, i) => <div key={i}>{h.name}{h.qty ? ` — ${h.qty}` : ""}</div>)}
+                </div>
+              )}
+              {!Object.keys(aiPreview.info || {}).some((k) => aiPreview.info[k]) && !aiPreview.contacts.length && !aiPreview.vendors.length && !aiPreview.collections.length && !aiPreview.days.length && !aiPreview.hgExtras.length && (
+                <div style={{ padding: "14px 0", fontStyle: "italic", color: "var(--muted-fg)" }}>Nothing recognizable was found in that text.</div>
+              )}
+            </>
           )}
         </div>
         <div className="modal-actions">
-          <button className="btn btn-ink" style={{ width: "100%", justifyContent: "center" }} onClick={applyAiAutofill}>Apply to Event</button>
+          <button className="btn btn-ink" style={{ width: "100%", justifyContent: "center" }} onClick={applyAiAutofill}>{aiPreview.mode === "library" ? "Save to Library" : "Apply to Event"}</button>
           <button className="btn btn-grey" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setShowAiPreview(false); setAiPreview(null); }}>Cancel</button>
         </div>
       </div>
@@ -3219,15 +3307,16 @@ window.onload = function () {
         <div className="app-ui">
           <div className="root">
             <div className="masthead">
-              <div>
-                <div className="mast-eyebrow">Erin Mcdonald Co.</div>
-                <h1 className="mast-title">{info.client || "Event Production"}</h1>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {isDirty && <span className="badge" style={{ background: "var(--orange)" }}>Unsaved changes</span>}
-                  <button className="btn btn-ink btn-xs" onClick={handleManualSave} disabled={saveState === "Saving…" || !currentEventId}>Save</button>
+              <div className="clock-widget">
+                <span className="clock-dot" />
+                <div>
+                  <div className="clock-time">{now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" })}</div>
+                  <div className="clock-date">{now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</div>
                 </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {isDirty && <span className="badge" style={{ background: "var(--orange)" }}>Unsaved changes</span>}
+                <button className="btn btn-ink btn-xs" onClick={handleManualSave} disabled={saveState === "Saving…" || !currentEventId}>Save</button>
                 <div className="mast-save">{saveState}</div>
               </div>
             </div>
@@ -3239,24 +3328,24 @@ window.onload = function () {
             {page === 0 && renderQuickLinks()}
             {page === 1 && renderEventInfo()}
             {page === 2 && renderContacts()}
-            {page === 3 && renderBuild()}
-            {page === 4 && renderProduction()}
-            {page === 5 && renderMaster()}
-            {page === 6 && renderHardGoods()}
-            {page === 7 && renderLoad()}
-            {page === 8 && renderContactSheet()}
+            {page === 3 && renderVendors()}
+            {page === 4 && renderBuild()}
+            {page === 5 && renderProduction()}
+            {page === 6 && renderMaster()}
+            {page === 7 && renderHardGoods()}
+            {page === 8 && renderLoad()}
             {page === 9 && renderSchedule()}
-            {page === 10 && renderIndex()}
-            {page === 11 && renderVendors()}
-            {page >= 1 && page <= 3 && (
+            {page === 10 && renderContactSheet()}
+            {page === 11 && renderIndex()}
+            {page >= 1 && page <= 4 && (
               <div className="sticky">
                 <button className="btn btn-line" onClick={() => setPage((p) => p - 1)}>← Back</button>
                 <button className="btn btn-grey" onClick={() => setPage(0)}>Home</button>
-                {page < 3 ? <button className="btn btn-ink" onClick={() => setPage((p) => p + 1)}>Next →</button> : null}
+                {page < 4 ? <button className="btn btn-ink" onClick={() => setPage((p) => p + 1)}>Next →</button> : null}
               </div>
             )}
           </div>
-          <div className="app-footer">Erin Mcdonald Co.</div>
+          <div className="app-footer">tallboydeco</div>
         </div>
         {printDoc}
         {resetModal}
