@@ -1351,15 +1351,41 @@ function EventProductionSheet() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
-          max_tokens: 4000,
+          max_tokens: 8000,
           system: mode === "library" ? LIBRARY_AUTOFILL_SYSTEM : AI_AUTOFILL_SYSTEM,
           messages: [{ role: "user", content: text }],
         }),
       });
       const data = await resp.json();
+      if (!resp.ok) {
+        const msg = (data && data.error && data.error.message) || `HTTP ${resp.status}`;
+        console.error("AI Autofill: API error", resp.status, data);
+        throw new Error("api:" + msg);
+      }
       const textBlocks = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
+      if (!textBlocks.trim()) {
+        console.error("AI Autofill: empty response", data);
+        throw new Error("empty");
+      }
       const clean = textBlocks.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
+      let parsed;
+      try {
+        parsed = JSON.parse(clean);
+      } catch (parseErr) {
+        // Fall back to extracting the outermost {...} in case of stray preamble/truncation
+        const first = clean.indexOf("{");
+        const last = clean.lastIndexOf("}");
+        if (first === -1 || last === -1 || last <= first) {
+          console.error("AI Autofill: no JSON object found", clean);
+          throw new Error("noJson");
+        }
+        try {
+          parsed = JSON.parse(clean.slice(first, last + 1));
+        } catch (parseErr2) {
+          console.error("AI Autofill: unparseable JSON", data.stop_reason, clean);
+          throw new Error(data.stop_reason === "max_tokens" ? "truncated" : "badJson");
+        }
+      }
       const norm = mode === "library" ? {
         mode: "library",
         contacts: Array.isArray(parsed && parsed.contacts) ? parsed.contacts : [],
@@ -1381,7 +1407,19 @@ function EventProductionSheet() {
       setAiPreview(norm);
       setShowAiPreview(true);
     } catch (e) {
-      setAiError("Couldn't parse that. Try simplifying the text, or check your connection and try again.");
+      const m = e && e.message ? String(e.message) : "";
+      if (m === "truncated") {
+        setAiError("That was too long for one pass — try pasting it in two smaller batches.");
+      } else if (m.startsWith("api:")) {
+        setAiError("API error: " + m.slice(4));
+      } else if (m === "empty") {
+        setAiError("Got an empty response. Check your connection and try again.");
+      } else if (m === "Failed to fetch" || e instanceof TypeError) {
+        setAiError("Couldn't reach the AI service. Check your connection and try again.");
+      } else {
+        setAiError("Couldn't parse that. Try simplifying the text, or check your connection and try again.");
+      }
+      console.error("AI Autofill failed:", e);
     } finally {
       setAiLoading(false);
     }
