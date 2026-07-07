@@ -498,11 +498,29 @@ function parseContactLine(clean) {
   };
 }
 
+// Reduces a fresh-good or hard-good name to a singular, case-insensitive key so
+// "peony" / "peonies" or "vase" / "vases" collapse to the same library line
+// instead of being saved or counted as two separate items.
+function singularKey(raw) {
+  const w = String(raw || "").toLowerCase().trim();
+  if (!w) return w;
+  if (/(ss|us)$/.test(w)) return w; // e.g. ranunculus, glass — already invariant, don't mangle
+  if (/ies$/.test(w) && w.length > 4) return w.slice(0, -3) + "y"; // peonies -> peony
+  if (/(sses|ches|shes|xes|zes)$/.test(w)) return w.slice(0, -2); // boxes -> box, dishes -> dish
+  if (/s$/.test(w) && w.length > 3) return w.slice(0, -1); // roses -> rose, votives -> votive
+  return w;
+}
+
+function addBucketItem(map, key, display) {
+  if (!map.has(key)) map.set(key, display);
+}
+
 function classifyLibraryTerm(term, known, buckets) {
   const t = term.toLowerCase().trim();
   if (!t) return;
-  if (known.flowers.has(t) || COMMON_FLOWER_WORDS.some((w) => t.includes(w))) { buckets.flowers.add(term.trim()); return; }
-  if (known.hardGoods.has(t) || COMMON_HARDGOOD_WORDS.some((w) => t.includes(w))) { buckets.hardGoods.add(term.trim()); return; }
+  const tKey = singularKey(t);
+  if (known.flowers.has(tKey) || COMMON_FLOWER_WORDS.some((w) => t.includes(w))) { addBucketItem(buckets.flowers, tKey, term.trim()); return; }
+  if (known.hardGoods.has(tKey) || COMMON_HARDGOOD_WORDS.some((w) => t.includes(w))) { addBucketItem(buckets.hardGoods, tKey, term.trim()); return; }
   if (known.venues.has(t) || VENUE_WORDS.some((w) => t.includes(w))) { buckets.venues.add(term.trim()); return; }
   if (known.businesses.has(t) || BUSINESS_WORDS.some((w) => t.includes(w))) { buckets.businesses.add(term.trim()); return; }
   if (known.clients.has(t)) { buckets.clients.add(term.trim()); return; }
@@ -512,13 +530,13 @@ function classifyLibraryTerm(term, known, buckets) {
 
 function parseLibrarySmart(text, library) {
   const known = {
-    flowers: new Set((library.flowers || []).map((s) => s.toLowerCase())),
-    hardGoods: new Set((library.components || []).map((s) => s.toLowerCase())),
+    flowers: new Set((library.flowers || []).map((s) => singularKey(s))),
+    hardGoods: new Set((library.components || []).map((s) => singularKey(s))),
     venues: new Set((library.venues || []).map((s) => s.toLowerCase())),
     businesses: new Set((library.businesses || []).map((s) => s.toLowerCase())),
     clients: new Set((library.clients || []).map((s) => s.toLowerCase())),
   };
-  const buckets = { flowers: new Set(), hardGoods: new Set(), venues: new Set(), businesses: new Set(), clients: new Set(), unmatched: [] };
+  const buckets = { flowers: new Map(), hardGoods: new Map(), venues: new Set(), businesses: new Set(), clients: new Set(), unmatched: [] };
   const contacts = [];
   const lines = String(text || "").split(/\r?\n/).map(stripBullet).filter(Boolean);
 
@@ -540,7 +558,7 @@ function parseLibrarySmart(text, library) {
 
   return {
     mode: "library", contacts,
-    flowers: [...buckets.flowers], hardGoods: [...buckets.hardGoods], businesses: [...buckets.businesses],
+    flowers: [...buckets.flowers.values()], hardGoods: [...buckets.hardGoods.values()], businesses: [...buckets.businesses],
     venues: [...buckets.venues], clients: [...buckets.clients], roles: [], unmatched: buckets.unmatched,
   };
 }
@@ -1593,6 +1611,7 @@ function EventProductionSheet() {
   };
 
   const nrmKey = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const goodsKey = (s) => singularKey(nrmKey(s));
   const dedupeArr = (arr, keyFn) => {
     const seen = new Set();
     return arr.filter((x) => {
@@ -1694,7 +1713,7 @@ function EventProductionSheet() {
         goodCollections.forEach((c) => {
           const cleanPieces = dedupeArr((Array.isArray(c.pieces) ? c.pieces : []).filter((p) => p && (p.name || "").trim()), (p) => nrmKey(p.name)).map((p) => ({
             ...newPiece(), name: p.name || "", qty: String(p.qty || "1"), pullMode: p.pullMode === "total" ? "total" : "per",
-            stems: dedupeArr((Array.isArray(p.stems) ? p.stems : []).filter((s) => s && (s.name || "").trim()), (s) => nrmKey(s.name)).map((s) => ({
+            stems: dedupeArr((Array.isArray(p.stems) ? p.stems : []).filter((s) => s && (s.name || "").trim()), (s) => goodsKey(s.name)).map((s) => ({
               ...newStem(), name: s.name || "", qty: String(s.qty || ""), unit: ["stems", "bunches", "blooms"].includes(s.unit) ? s.unit : "stems",
             })),
           })).map((p) => ({ ...p, stems: p.stems.length ? p.stems : [newStem()] }));
@@ -1716,11 +1735,11 @@ function EventProductionSheet() {
       });
     }
 
-    const goodHg = dedupeArr(d.hgExtras.filter((h) => h && (h.name || "").trim()), (h) => nrmKey(h.name));
+    const goodHg = dedupeArr(d.hgExtras.filter((h) => h && (h.name || "").trim()), (h) => goodsKey(h.name));
     if (goodHg.length) {
       setHgExtras((prev) => {
-        const existingKeys = new Set(prev.map((h) => nrmKey(h.name)));
-        const added = goodHg.filter((h) => !existingKeys.has(nrmKey(h.name))).map((h) => ({ id: uid(), name: h.name || "", qty: String(h.qty || "") }));
+        const existingKeys = new Set(prev.map((h) => goodsKey(h.name)));
+        const added = goodHg.filter((h) => !existingKeys.has(goodsKey(h.name))).map((h) => ({ id: uid(), name: h.name || "", qty: String(h.qty || "") }));
         return added.length ? [...prev, ...added] : prev;
       });
     }
@@ -1828,7 +1847,8 @@ function EventProductionSheet() {
   const learn = (cat, val) => {
     const v = (val || "").trim();
     if (!v) return;
-    setLibrary((prev) => (prev[cat].some((x) => x.toLowerCase() === v.toLowerCase()) ? prev : { ...prev, [cat]: [...prev[cat], v] }));
+    const isGoodsCat = cat === "flowers" || cat === "components";
+    setLibrary((prev) => (prev[cat].some((x) => (isGoodsCat ? singularKey(x) === singularKey(v) : x.toLowerCase() === v.toLowerCase())) ? prev : { ...prev, [cat]: [...prev[cat], v] }));
   };
   const forget = (cat, val) => setLibrary((prev) => ({ ...prev, [cat]: prev[cat].filter((x) => x !== val) }));
   const setInfoF = (k, v) => setInfo((p) => ({ ...p, [k]: v }));
